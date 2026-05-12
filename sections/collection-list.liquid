@@ -1,0 +1,156 @@
+<section class="collection-list color-{{ section.settings.color_scheme }}">
+  {%- if section.settings.heading != blank -%}
+    <h2 class="collection-list-heading text-large">{{ section.settings.heading }}</h2>
+  {%- endif -%}
+
+  {%- if section.blocks.size > 0 -%}
+    <div class="grid grid-{{ section.settings.grid_columns }}">
+      {%- for block in section.blocks -%}
+        {%- assign collection = block.settings.collection -%}
+        <div class="collection-card" {{ block.shopify_attributes }}>
+          <a href="{{ collection.url | default: '#' }}" class="collection-card-link">
+            <div class="collection-card-image aspect-square">
+              {%- if block.settings.image -%}
+                {{ block.settings.image | image_url: width: 600 | image_tag:
+                  loading: 'lazy',
+                  width: block.settings.image.width,
+                  height: block.settings.image.height
+                }}
+              {%- elsif collection.image -%}
+                {{ collection.image | image_url: width: 600 | image_tag:
+                  loading: 'lazy',
+                  width: collection.image.width,
+                  height: collection.image.height
+                }}
+              {%- else -%}
+                {{ 'collection-1' | placeholder_svg_tag: 'placeholder' }}
+              {%- endif -%}
+            </div>
+
+            {%- if section.settings.show_collection_title and collection.title != blank -%}
+              <h3 class="collection-card-title">{{ collection.title }}</h3>
+            {%- endif -%}
+
+            {%- if section.settings.show_collection_count and collection != blank -%}
+              <p class="collection-card-count text-light text-mini">
+                {{ 'collections.general.product_count' | t: count: collection.all_products_count }}
+              </p>
+            {%- endif -%}
+          </a>
+        </div>
+      {%- endfor -%}
+    </div>
+  {%- endif -%}
+</section>
+
+{% stylesheet %}
+  .collection-list {
+    padding: var(--spacing-l) var(--spacing-base);
+  }
+
+  @media (min-width: 600px) {
+    .collection-list {
+      padding: var(--spacing-xl) var(--spacing-m);
+    }
+  }
+
+  .collection-list-heading {
+    margin: 0 0 var(--spacing-m) 0;
+  }
+
+  .collection-card-link {
+    display: block;
+  }
+
+  .collection-card-image {
+    overflow: hidden;
+    border-radius: 4px;
+    background-color: hsla(0, 0%, 0%, 0.1);
+  }
+
+  .collection-card-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .collection-card-title {
+    margin: var(--spacing-s) 0 0 0;
+    font-size: var(--type-base-size);
+    line-height: var(--type-base-height);
+  }
+
+  .collection-card-count {
+    margin: var(--spacing-xs) 0 0 0;
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Collection list",
+  "tag": "section",
+  "class": "collection-list-section",
+  "settings": [
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "Collections"
+    },
+    {
+      "type": "select",
+      "id": "grid_columns",
+      "label": "Grid columns (desktop)",
+      "options": [
+        { "value": "2", "label": "2 columns" },
+        { "value": "3", "label": "3 columns" },
+        { "value": "4", "label": "4 columns" }
+      ],
+      "default": "3"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_collection_title",
+      "label": "Show collection title",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_collection_count",
+      "label": "Show product count",
+      "default": true
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-1"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "collection",
+      "name": "Collection",
+      "limit": 12,
+      "settings": [
+        {
+          "type": "collection",
+          "id": "collection",
+          "label": "Collection"
+        },
+        {
+          "type": "image_picker",
+          "id": "image",
+          "label": "Custom image",
+          "info": "Overrides the collection image"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Collection list"
+    }
+  ]
+}
+{% endschema %}

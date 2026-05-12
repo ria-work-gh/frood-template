@@ -1,0 +1,62 @@
+{% comment %}
+  Renders filter sidebar for collections using Shopify storefront filtering.
+
+  Expects:
+    - collection: the current collection object
+
+  Usage:
+    {% render 'collection-filters', collection: collection %}
+{% endcomment %}
+
+<form id="filter-form" data-filters class="filter-form" action="{{ collection.url }}" method="get">
+  {%- for filter in collection.filters -%}
+    <details open>
+      <summary>{{ filter.label }}</summary>
+
+      <div class="filter-options">
+        {%- case filter.type -%}
+          {%- when 'boolean' or 'list' -%}
+            {%- for value in filter.values -%}
+              <label class="filter-pill">
+                <input
+                  type="checkbox"
+                  name="{{ value.param_name }}"
+                  value="{{ value.value }}"
+                  {% if value.active %}checked{% endif %}
+                  {% if value.count == 0 and value.active == false %}disabled{% endif %}
+                >
+                <span>{{ value.label }} ({{ value.count }})</span>
+              </label>
+            {%- endfor -%}
+
+          {%- when 'price_range' -%}
+            <div class="filter-price-range">
+              <div class="form-group">
+                <input
+                  class="input"
+                  type="number"
+                  name="{{ filter.min_value.param_name }}"
+                  value="{{ filter.min_value.value }}"
+                  placeholder="{{ 'collections.filtering.min' | t | default: 'Min' }}"
+                  min="0"
+                  max="{{ filter.range_max | money_without_currency }}"
+                >
+              </div>
+              <div class="form-group">
+                <input
+                  class="input"
+                  type="number"
+                  name="{{ filter.max_value.param_name }}"
+                  value="{{ filter.max_value.value }}"
+                  placeholder="{{ 'collections.filtering.max' | t | default: 'Max' }}"
+                  min="0"
+                  max="{{ filter.range_max | money_without_currency }}"
+                >
+              </div>
+            </div>
+        {%- endcase -%}
+      </div>
+    </details>
+  {%- endfor -%}
+
+</form>

@@ -1,0 +1,199 @@
+<cart-drawer id="cart-drawer" class="cart-drawer" role="dialog" aria-modal="true" aria-hidden="true" aria-label="{{ 'cart.drawer.title' | t }}">
+  <div class="cart-drawer-overlay" data-overlay></div>
+
+  <div class="cart-drawer-panel">
+    <div class="cart-drawer-header">
+      <h2 class="cart-drawer-title">
+        {{ 'cart.drawer.title' | t }}
+        <span class="cart-drawer-count">({{ cart.item_count }})</span>
+      </h2>
+      <button class="cart-drawer-close" data-close aria-label="{{ 'cart.drawer.close' | t }}">
+        {% render 'icon-close' %}
+      </button>
+    </div>
+
+    <div class="cart-drawer-body">
+      {%- if cart.item_count > 0 -%}
+        <cart-items>
+          {% render 'cart-items', cart: cart %}
+        </cart-items>
+
+        {%- assign upsell_products = cart.items.first.product.metafields.custom.upsell_products.value -%}
+        {%- if upsell_products == blank and section.settings.upsell_collection != blank -%}
+          {%- assign upsell_products = section.settings.upsell_collection.products -%}
+        {%- endif -%}
+
+        {%- if upsell_products != blank and upsell_products.size > 0 -%}
+          <div class="cart-drawer-upsells">
+            <h3 class="cart-drawer-upsells-heading">
+              {{ section.settings.upsell_heading | default: 'cart.drawer.upsell_heading' | t }}
+            </h3>
+            <div class="cart-drawer-upsells-grid">
+              {%- for upsell in upsell_products limit: 4 -%}
+                {%- assign in_cart = false -%}
+                {%- for item in cart.items -%}
+                  {%- if item.product.id == upsell.id -%}
+                    {%- assign in_cart = true -%}
+                    {%- break -%}
+                  {%- endif -%}
+                {%- endfor -%}
+                {%- unless in_cart -%}
+                  {% render 'product-card', product: upsell %}
+                {%- endunless -%}
+              {%- endfor -%}
+            </div>
+          </div>
+        {%- endif -%}
+      {%- else -%}
+        {% render 'cart-empty' %}
+      {%- endif -%}
+    </div>
+
+    <div class="cart-drawer-footer">
+      {%- if cart.item_count > 0 -%}
+        {% render 'cart-totals', cart: cart %}
+      {%- else -%}
+        <a href="{{ routes.all_products_collection_url }}" class="button cart-drawer-footer-full">
+          {{ 'cart.general.continue_shopping' | t }}
+        </a>
+      {%- endif -%}
+    </div>
+  </div>
+</cart-drawer>
+
+<script src="{{ 'cart-drawer.js' | asset_url }}" defer></script>
+<script src="{{ 'cart-items.js' | asset_url }}" defer></script>
+<script src="{{ 'quantity-selector.js' | asset_url }}" defer></script>
+
+{% stylesheet %}
+  .cart-drawer {
+    position: fixed;
+    inset: 0;
+    z-index: 99;
+    pointer-events: none;
+  }
+
+  .cart-drawer.is-open {
+    pointer-events: auto;
+  }
+
+  .cart-drawer-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    opacity: 0;
+    transition: opacity var(--transition-slow);
+  }
+
+  .cart-drawer.is-open .cart-drawer-overlay {
+    opacity: 1;
+  }
+
+  .cart-drawer-panel {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 100%;
+    max-width: 420px;
+    height: 100%;
+    background: var(--color-bg);
+    transform: translateX(100%);
+    transition: transform var(--transition-slow);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .cart-drawer.is-open .cart-drawer-panel {
+    transform: translateX(0);
+  }
+
+  .cart-drawer-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-base);
+    border-bottom: 1px solid hsla(0, 0%, 0%, 0.1);
+  }
+
+  .cart-drawer-title {
+    margin: 0;
+  }
+
+  .cart-drawer-close {
+    display: block;
+    background: none;
+    border: none;
+    cursor: pointer;
+    line-height: 0;
+  }
+
+  .cart-drawer-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: var(--spacing-base);
+  }
+
+  .cart-drawer-footer {
+    padding: var(--spacing-base);
+    border-top: 1px solid hsla(0, 0%, 0%, 0.1);
+  }
+
+  .cart-drawer-footer-full {
+    width: 100%;
+    text-align: center;
+  }
+
+  .cart-drawer.is-loading .cart-drawer-body {
+    opacity: 0.6;
+    pointer-events: none;
+  }
+
+  .cart-drawer-upsells {
+    margin-top: var(--spacing-m);
+    padding-top: var(--spacing-m);
+    border-top: 1px solid hsla(0, 0%, 0%, 0.1);
+  }
+
+  .cart-drawer-upsells-heading {
+    margin-bottom: var(--spacing-s);
+  }
+
+  .cart-drawer-upsells-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-s);
+  }
+
+  body.drawer-open {
+    overflow: hidden;
+  }
+
+  /* Reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    .cart-drawer-overlay,
+    .cart-drawer-panel {
+      transition: none;
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Cart drawer",
+  "class": "cart-drawer-section",
+  "settings": [
+    {
+      "type": "text",
+      "id": "upsell_heading",
+      "label": "Upsell heading",
+      "default": "You may also like"
+    },
+    {
+      "type": "collection",
+      "id": "upsell_collection",
+      "label": "Upsell collection",
+      "info": "Fallback when products don't have upsell metafields"
+    }
+  ]
+}
+{% endschema %}

@@ -1,0 +1,147 @@
+/*
+ * ------------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin theme editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * ------------------------------------------------------------
+ */
+{
+  "sections": {
+    "hero_slideshow_G9F4bx": {
+      "type": "hero-slideshow",
+      "blocks": {
+        "slide_6kY9wT": {
+          "type": "slide",
+          "settings": {
+            "image": "",
+            "video": "",
+            "heading": "Your brand starts here",
+            "subheading": "Add a hero image or video to make a strong first impression.",
+            "button_text": "Shop now",
+            "button_link": "",
+            "overlay_opacity": 0,
+            "button_style": "primary"
+          }
+        },
+        "slide_XxkVVb": {
+          "type": "slide",
+          "settings": {
+            "image": "",
+            "heading": "Tell your story",
+            "subheading": "Use slides to highlight collections, promotions, or seasonal campaigns.",
+            "button_text": "Shop now",
+            "button_link": "",
+            "overlay_opacity": 0,
+            "button_style": "primary"
+          }
+        }
+      },
+      "block_order": [
+        "slide_6kY9wT",
+        "slide_XxkVVb"
+      ],
+      "name": "Hero slideshow",
+      "settings": {
+        "min_height": "full",
+        "autoplay": true,
+        "autoplay_speed": 5
+      }
+    },
+    "featured_collection": {
+      "type": "featured-collection",
+      "settings": {
+        "heading": "Featured collection",
+        "collection": "",
+        "products_to_show": 8,
+        "show_view_all": true,
+        "color_scheme": "scheme-1"
+      }
+    },
+    "text_section_3cQWrM": {
+      "type": "text-section",
+      "blocks": {
+        "text_rabzAR": {
+          "type": "text",
+          "settings": {
+            "content": "<p>Tell your brand story here. Share what makes your products unique, your company values, or the inspiration behind your store.</p>"
+          }
+        },
+        "accordion_bHaipR": {
+          "type": "accordion",
+          "settings": {
+            "question": "What is your shipping policy?",
+            "answer": "<p>Share your shipping details here — delivery times, costs, and any free shipping thresholds.</p>"
+          }
+        },
+        "accordion_zMEkGX": {
+          "type": "accordion",
+          "settings": {
+            "question": "What is your return policy?",
+            "answer": "<p>Describe your return and exchange policy here — timeframes, conditions, and how customers can initiate a return.</p>"
+          }
+        },
+        "accordion_kw9RBa": {
+          "type": "accordion",
+          "settings": {
+            "question": "How can I contact you?",
+            "answer": "<p>Let customers know how to reach you — email, phone, contact form, or social media channels.</p>"
+          }
+        }
+      },
+      "block_order": [
+        "text_rabzAR",
+        "accordion_bHaipR",
+        "accordion_zMEkGX",
+        "accordion_kw9RBa"
+      ],
+      "name": "Text section",
+      "settings": {
+        "heading": "About Us",
+        "color_scheme": ""
+      }
+    },
+    "rich_text": {
+      "type": "rich-text",
+      "blocks": {
+        "heading": {
+          "type": "heading",
+          "settings": {
+            "text": "Stay in the loop"
+          }
+        },
+        "text_Eg6zXe": {
+          "type": "text",
+          "settings": {
+            "text": "<p>Sign up for our newsletter to hear about new arrivals, special offers, and store updates.</p>"
+          }
+        },
+        "button_7tYnnW": {
+          "type": "button",
+          "settings": {
+            "text": "Subscribe",
+            "link": "",
+            "style": "primary"
+          }
+        }
+      },
+      "block_order": [
+        "heading",
+        "text_Eg6zXe",
+        "button_7tYnnW"
+      ],
+      "settings": {
+        "color_scheme": "scheme-1",
+        "text_alignment": "center",
+        "narrow_width": true
+      }
+    }
+  },
+  "order": [
+    "hero_slideshow_G9F4bx",
+    "featured_collection",
+    "text_section_3cQWrM",
+    "rich_text"
+  ]
+}

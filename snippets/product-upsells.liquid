@@ -1,0 +1,19 @@
+{% comment %}
+  Renders upsell products from the product's custom.upsell_products metafield.
+  Expects: product (product object), heading (optional string)
+{% endcomment %}
+
+{%- assign upsell_products = product.metafields.custom.upsell_products.value -%}
+
+{%- if upsell_products != blank and upsell_products.size > 0 -%}
+  <div class="upsells">
+    <h3 class="upsells-heading">{{ heading | default: 'products.product.upsells_heading' | t }}</h3>
+    <div class="grid grid-4">
+      {%- for upsell in upsell_products -%}
+        {%- unless upsell.id == product.id -%}
+          {% render 'product-card', product: upsell %}
+        {%- endunless -%}
+      {%- endfor -%}
+    </div>
+  </div>
+{%- endif -%}

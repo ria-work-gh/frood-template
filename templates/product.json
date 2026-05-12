@@ -1,0 +1,80 @@
+/*
+ * ------------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin theme editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * ------------------------------------------------------------
+ */
+{
+  "sections": {
+    "main": {
+      "type": "main-product",
+      "blocks": {
+        "title": {
+          "type": "title",
+          "settings": {}
+        },
+        "price": {
+          "type": "price",
+          "settings": {}
+        },
+        "variant_selector": {
+          "type": "variant_selector",
+          "settings": {}
+        },
+        "buy_buttons": {
+          "type": "buy_buttons",
+          "settings": {
+            "show_quantity": true
+          }
+        },
+        "accordion_QVAyJJ": {
+          "type": "accordion",
+          "settings": {
+            "heading": "Details",
+            "content": "<p>some details about the product</p>"
+          }
+        },
+        "accordion_xiU6wB": {
+          "type": "accordion",
+          "settings": {
+            "heading": "Shipping",
+            "content": "<p>Some text about shipping...</p>"
+          }
+        },
+        "description": {
+          "type": "description",
+          "settings": {}
+        }
+      },
+      "block_order": [
+        "title",
+        "price",
+        "variant_selector",
+        "buy_buttons",
+        "accordion_QVAyJJ",
+        "accordion_xiU6wB",
+        "description"
+      ],
+      "settings": {
+        "color_scheme": "scheme-1"
+      }
+    },
+    "product_recommendations_76MMMN": {
+      "type": "product-recommendations",
+      "name": "Product recommendations",
+      "settings": {
+        "heading": "You may also like",
+        "products_to_show": 4,
+        "grid_columns": "4",
+        "color_scheme": "scheme-3"
+      }
+    }
+  },
+  "order": [
+    "main",
+    "product_recommendations_76MMMN"
+  ]
+}

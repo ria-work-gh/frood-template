@@ -1,0 +1,73 @@
+<div class="cart-page color-{{ section.settings.color_scheme }}">
+  <h1 class="cart-title text-large">{{ 'cart.general.title' | t }}</h1>
+
+  <form action="{{ routes.cart_url }}" method="post" class="cart-form">
+    <cart-items data-section-id="main-cart">
+      {%- if cart.item_count > 0 -%}
+        {% render 'cart-items', cart: cart %}
+
+        {%- if section.settings.show_note -%}
+          <div class="cart-note">
+            <label for="cart-note" class="form-label">{{ 'cart.general.order_note' | t }}</label>
+            <textarea id="cart-note" name="note" class="textarea">{{ cart.note }}</textarea>
+          </div>
+        {%- endif -%}
+
+        {% render 'cart-totals', cart: cart %}
+      {%- else -%}
+        {% render 'cart-empty' %}
+      {%- endif -%}
+    </cart-items>
+  </form>
+</div>
+
+<script src="{{ 'cart-items.js' | asset_url }}" defer></script>
+<script src="{{ 'quantity-selector.js' | asset_url }}" defer></script>
+
+{% stylesheet %}
+  .cart-page {
+    padding: var(--spacing-l) var(--spacing-base);
+    max-width: 900px;
+    margin-inline: auto;
+  }
+
+  @media (min-width: 600px) {
+    .cart-page {
+      padding: var(--spacing-xl) var(--spacing-m);
+    }
+  }
+
+  .cart-title {
+    margin-bottom: var(--spacing-m);
+  }
+
+  .cart-note {
+    margin-top: var(--spacing-m);
+  }
+
+  .cart-note .textarea {
+    width: 100%;
+    min-height: 80px;
+    margin-top: var(--spacing-xs);
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Cart",
+  "settings": [
+    {
+      "type": "checkbox",
+      "id": "show_note",
+      "label": "Show order note",
+      "default": false
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-1"
+    }
+  ]
+}
+{% endschema %}

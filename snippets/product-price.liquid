@@ -1,0 +1,37 @@
+{% comment %}
+  Renders product price with sale badge and compare-at price.
+  Expects: product (product object)
+{% endcomment %}
+
+{%- assign current_variant = product.selected_or_first_available_variant -%}
+<div class="product-price">
+  {%- if current_variant.compare_at_price > current_variant.price -%}
+    <dl class="price-list">
+      <dt class="visually-hidden">{{ 'products.product.price' | t }}</dt>
+      <dd class="price-sale">{{ current_variant.price | money }}</dd>
+
+      <dt class="visually-hidden">{{ 'products.product.compare_at_price' | t }}</dt>
+      <dd class="price-compare text-light">
+        <s>{{ current_variant.compare_at_price | money }}</s>
+      </dd>
+    </dl>
+  {%- else -%}
+    <dl class="price-list">
+      <dt class="visually-hidden">{{ 'products.product.price' | t }}</dt>
+      <dd class="price-regular text-light">{{ current_variant.price | money }}</dd>
+    </dl>
+  {%- endif -%}
+</div>
+
+{% stylesheet %}
+  .product-price {
+    display: flex;
+    gap: var(--spacing-xs);
+    align-items: baseline;
+  }
+  .price-list {
+    display: flex;
+    gap: var(--spacing-xs);
+    align-items: baseline;
+  }
+{% endstylesheet %}

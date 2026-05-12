@@ -1,0 +1,117 @@
+{%- comment -%}
+  Renders a single cart line item.
+
+  Expects:
+    - item: cart line item object
+
+  Usage:
+    {% render 'cart-item', item: item %}
+{%- endcomment -%}
+
+<div class="cart-item" data-key="{{ item.key }}">
+  <a href="{{ item.url }}" class="cart-item-image">
+    <div class="aspect-square">
+      {{ item.image | image_url: width: 200 | image_tag:
+          loading: 'lazy',
+          width: item.image.width,
+          height: item.image.height
+      }}
+    </div>
+  </a>
+
+  <div class="cart-item-details">
+    <a href="{{ item.url }}" class="cart-item-title">
+      {{ item.product.title }}
+    </a>
+
+    {%- if item.variant.title != 'Default Title' -%}
+      <p class="cart-item-variant text-mini">{{ item.variant.title }}</p>
+    {%- endif -%}
+
+    <p class="cart-item-price">
+      {%- if item.original_line_price != item.final_line_price -%}
+        <s class="cart-item-compare-price">{{ item.original_line_price | money }}</s>
+      {%- endif -%}
+      {{ item.final_line_price | money }}
+    </p>
+
+    <div class="cart-item-actions">
+      <div class="cart-item-quantity">
+        {% render 'quantity-selector',
+          value: item.quantity,
+          name: 'updates[]',
+          min: 0,
+          max: item.variant.inventory_quantity | default: 99,
+          data_key: item.key
+        %}
+      </div>
+
+      <button
+        type="button"
+        class="cart-item-remove button"
+        data-remove="{{ item.key }}"
+        aria-label="{{ 'cart.general.remove_item' | t: title: item.product.title }}"
+      >
+        {{ 'cart.general.remove' | t }}
+      </button>
+    </div>
+  </div>
+</div>
+
+{% stylesheet %}
+  .cart-item {
+    display: grid;
+    grid-template-columns: 80px 1fr;
+    gap: var(--spacing-base);
+    padding: var(--spacing-base) 0;
+    border-bottom: 1px solid hsla(0, 0%, 0%, 0.1);
+  }
+
+  .cart-item:first-child {
+    padding-top: 0;
+  }
+
+  .cart-item:last-child {
+    border-bottom: none;
+  }
+
+  .cart-item-image {
+    display: block;
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .cart-item-details {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+    min-width: 0;
+  }
+
+  .cart-item-title {
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .cart-item-variant {
+    color: var(--color-text-light);
+  }
+
+  .cart-item-price {
+    font-weight: 500;
+  }
+
+  .cart-item-compare-price {
+    color: var(--color-text-light);
+    margin-right: var(--spacing-xs);
+  }
+
+  .cart-item-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-s);
+    margin-top: var(--spacing-xs);
+  }
+{% endstylesheet %}

@@ -1,0 +1,279 @@
+<section class="main-product color-{{ section.settings.color_scheme }}">
+  {% render 'json-ld-product', product: product %}
+
+  <div class="product-layout">
+    <div class="product-gallery-column">
+      {% render 'product-gallery', product: product %}
+    </div>
+
+    <product-form class="product-info-column" data-section-id="{{ section.id }}">
+      <script type="application/json" class="product-json">
+        {{ product | json }}
+      </script>
+
+      {%- form 'product', product -%}
+        <input type="hidden" name="id" value="{{ product.selected_or_first_available_variant.id }}">
+
+        {%- for block in section.blocks -%}
+          {%- case block.type -%}
+            {%- when 'title' -%}
+              <h1 class="product-title text-xl" {{ block.shopify_attributes }}>
+                {{ product.title }}
+              </h1>
+
+            {%- when 'price' -%}
+              <div class="product-price-block" data-product-price data-variant-render="price" {{ block.shopify_attributes }}>
+                {% render 'product-price', product: product %}
+              </div>
+
+            {%- when 'variant_selector' -%}
+              <div class="product-variants" {{ block.shopify_attributes }}>
+                {% render 'product-variant-selector', product: product %}
+              </div>
+
+            {%- when 'buy_buttons' -%}
+              <div class="product-buy-buttons" data-variant-render="buy-buttons" {{ block.shopify_attributes }}>
+                {% render 'product-buy-buttons', product: product, show_quantity: block.settings.show_quantity %}
+              </div>
+
+            {%- when 'description' -%}
+              <div class="product-description typeset" {{ block.shopify_attributes }}>
+                {{ product.description }}
+              </div>
+
+            {%- when 'accordion' -%}
+              {%- unless prev_block_type == 'accordion' -%}
+                <div class="product-accordions">
+              {%- endunless -%}
+
+              <details class="product-accordion" {{ block.shopify_attributes }}>
+                <summary>
+                  {{ block.settings.heading }}
+                  <span class="product-accordion-icon" aria-hidden="true">+</span>
+                </summary>
+                <div class="typeset">{{ block.settings.content }}</div>
+              </details>
+
+              {%- assign next_block = section.blocks[forloop.index] -%}
+              {%- unless next_block.type == 'accordion' -%}
+                </div>
+              {%- endunless -%}
+
+            {%- when 'upsells' -%}
+              <div class="product-upsells" {{ block.shopify_attributes }}>
+                {% render 'product-upsells', product: product, heading: block.settings.heading %}
+              </div>
+
+            {%- when 'custom_text' -%}
+              <div class="product-custom-text typeset" {{ block.shopify_attributes }}>
+                {{ block.settings.content }}
+              </div>
+
+            {%- when '@app' -%}
+              {% render block %}
+          {%- endcase -%}
+          {%- assign prev_block_type = block.type -%}
+        {%- endfor -%}
+      {%- endform -%}
+    </product-form>
+  </div>
+</section>
+
+<script src="{{ 'product-form.js' | asset_url }}" defer></script>
+<script src="{{ 'embla-carousel.umd.js' | asset_url }}" defer></script>
+<script src="{{ 'product-gallery.js' | asset_url }}" defer></script>
+<script src="{{ 'quantity-selector.js' | asset_url }}" defer></script>
+
+{% stylesheet %}
+  .product-layout {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  @media (min-width: 900px) {
+    .product-layout {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+
+  .product-gallery-column {
+    position: relative;
+    overflow: hidden;
+    aspect-ratio: 1 / 1;
+  }
+
+  @media (min-width: 900px) {
+    .product-gallery-column {
+      position: sticky;
+      top: var(--header-height);
+      height: calc(100svh - var(--header-height));
+      aspect-ratio: auto;
+      align-self: start;
+    }
+  }
+
+  .product-info-column {
+    padding: var(--spacing-m) var(--spacing-base);
+  }
+
+  @media (min-width: 900px) {
+    .product-info-column {
+      min-height: calc(100svh - var(--header-height));
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+  }
+
+  .product-info-column form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-base);
+    max-width: 450px;
+    margin-inline: auto;
+  }
+
+  .product-title {
+    margin: 0;
+  }
+
+  .variant-options {
+    border: 0;
+    margin: 0;
+    padding: 0;
+  }
+
+  .buy-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-s);
+    align-items: stretch;
+  }
+
+  .buy-buttons .button {
+    flex: 1;
+  }
+
+  .product-accordions {
+    border-top: 1px solid var(--color-text-light);
+  }
+
+  .product-accordion summary {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    padding: var(--spacing-s) 0;
+    border-bottom: 1px solid var(--color-text-light);
+  }
+
+  .product-accordion-icon {
+    flex-shrink: 0;
+    transition: transform var(--transition-fast);
+  }
+
+  .product-accordion[open] .product-accordion-icon {
+    transform: rotate(45deg);
+  }
+
+  .product-accordion .typeset {
+    padding: var(--spacing-s) 0;
+  }
+
+  product-form.is-loading [data-variant-render] {
+    opacity: 0.6;
+    pointer-events: none;
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Product information",
+  "settings": [
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-1"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "title",
+      "name": "Title",
+      "limit": 1
+    },
+    {
+      "type": "price",
+      "name": "Price",
+      "limit": 1
+    },
+    {
+      "type": "variant_selector",
+      "name": "Variant selector",
+      "limit": 1
+    },
+    {
+      "type": "buy_buttons",
+      "name": "Buy buttons",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "checkbox",
+          "id": "show_quantity",
+          "label": "Show quantity selector",
+          "default": true
+        }
+      ]
+    },
+    {
+      "type": "description",
+      "name": "Description",
+      "limit": 1
+    },
+    {
+      "type": "accordion",
+      "name": "Accordion",
+      "settings": [
+        {
+          "type": "text",
+          "id": "heading",
+          "label": "Heading"
+        },
+        {
+          "type": "richtext",
+          "id": "content",
+          "label": "Content"
+        }
+      ]
+    },
+    {
+      "type": "upsells",
+      "name": "Upsells",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "text",
+          "id": "heading",
+          "label": "Heading",
+          "default": "Complete the set"
+        }
+      ]
+    },
+    {
+      "type": "custom_text",
+      "name": "Custom text",
+      "settings": [
+        {
+          "type": "richtext",
+          "id": "content",
+          "label": "Content"
+        }
+      ]
+    },
+    {
+      "type": "@app"
+    }
+  ]
+}
+{% endschema %}

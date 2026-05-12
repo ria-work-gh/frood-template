@@ -1,0 +1,25 @@
+{% comment %}
+  Reusable quantity input with decrease/increase buttons.
+  Params: value, name, min, max, data_key
+{% endcomment %}
+
+{%- assign qs_value = value | default: 1 -%}
+{%- assign qs_name = name | default: 'quantity' -%}
+{%- assign qs_min = min | default: 1 -%}
+{%- assign qs_max = max | default: 99 -%}
+
+<quantity-selector {% if data_key %} data-key="{{ data_key }}"{% endif %}>
+  <div class="quantity-selector">
+    <button type="button" data-action="decrease" aria-label="{{ 'products.product.decrease_quantity' | t }}">&#8722;</button>
+    <input
+      type="number"
+      name="{{ qs_name }}"
+      value="{{ qs_value }}"
+      min="{{ qs_min }}"
+      max="{{ qs_max }}"
+      {% if data_key %}data-key="{{ data_key }}"{% endif %}
+      aria-label="{{ 'products.product.quantity' | t }}"
+    >
+    <button type="button" data-action="increase" aria-label="{{ 'products.product.increase_quantity' | t }}">+</button>
+  </div>
+</quantity-selector>

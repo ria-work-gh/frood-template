@@ -1,0 +1,27 @@
+{% comment %}
+  Renders the add-to-cart form with optional quantity selector.
+  Must be rendered inside the product <form> (provided by main-product.liquid).
+  Expects: product (product object), show_quantity (boolean, default true)
+{% endcomment %}
+
+<div class="buy-buttons">
+  {%- if show_quantity -%}
+    {% render 'quantity-selector' %}
+  {%- endif -%}
+
+  <button
+    type="submit"
+    class="button button-primary button-lg"
+    data-add-text="{{ 'products.product.add_to_cart' | t }}"
+    data-sold-text="{{ 'products.product.sold_out' | t }}"
+    {% unless product.selected_or_first_available_variant.available %}disabled{% endunless %}
+  >
+    {%- if product.selected_or_first_available_variant.available -%}
+      {{ 'products.product.add_to_cart' | t }}
+    {%- else -%}
+      {{ 'products.product.sold_out' | t }}
+    {%- endif -%}
+  </button>
+</div>
+
+<div data-error class="form-error" role="alert" hidden></div>

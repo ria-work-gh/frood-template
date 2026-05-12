@@ -1,0 +1,305 @@
+<header class="header color-{{ section.settings.color_scheme }}">
+  <div class="header-container">
+    <div class="header-left">
+      <nav class="header-nav" aria-label="{{ 'header.navigation' | t }}">
+        {%- for link in linklists[section.settings.menu].links -%}
+          <a href="{{ link.url }}" class="nav-link">{{ link.title }}</a>
+        {%- endfor -%}
+      </nav>
+      <button
+        class="header-menu-toggle"
+        aria-label="{{ 'header.open_menu' | t }}"
+        aria-controls="mobile-menu"
+        aria-expanded="false"
+      >
+        {% render 'icon-menu' %}
+      </button>
+    </div>
+
+    <a href="/" class="header-logo text-cap">
+      {%- if section.settings.logo -%}
+        {{ section.settings.logo | image_url: width: 200 | image_tag: alt: shop.name }}
+      {%- else -%}
+        {{ shop.name }}
+      {%- endif -%}
+    </a>
+
+    <div class="header-right">
+      <button type="button" class="header-icon" aria-label="{{ 'header.search' | t }}" aria-controls="search-drawer" aria-expanded="false">
+        {% render 'icon-search' %}
+      </button>
+      <cart-icon data-aria-template="{{ 'accessibility.cart_count' | t: count: '__COUNT__' }}">
+        <a
+          href="{{ routes.cart_url }}"
+          class="header-icon"
+          aria-label="{{ 'accessibility.cart_count' | t: count: cart.item_count }}"
+        >
+          {% render 'icon-cart' %}
+          <span class="cart-count">{{ cart.item_count }}</span>
+        </a>
+      </cart-icon>
+    </div>
+  </div>
+</header>
+
+<mobile-menu id="mobile-menu" aria-hidden="true" aria-label="{{ 'header.menu' | t }}">
+  <div class="mobile-menu-overlay" data-overlay></div>
+  <div class="mobile-menu-panel">
+    <div class="mobile-menu-header">
+      <h2 class="mobile-menu-title">{{ shop.name }}</h2>
+      <button class="mobile-menu-close" aria-label="{{ 'header.close_menu' | t }}" data-close>
+        {% render 'icon-close' %}
+      </button>
+    </div>
+    <div class="mobile-menu-body">
+      <nav class="mobile-menu-nav" aria-label="{{ 'header.mobile_navigation' | t }}">
+        {%- for link in linklists[section.settings.menu].links -%}
+          <a href="{{ link.url }}" class="mobile-menu-link">
+            {{ link.title }}
+          </a>
+        {%- endfor -%}
+      </nav>
+    </div>
+  </div>
+</mobile-menu>
+
+<script src="{{ 'cart-icon.js' | asset_url }}" defer></script>
+<script src="{{ 'mobile-menu.js' | asset_url }}" defer></script>
+
+<script>
+  (function () {
+    var group = document.querySelector('.shopify-section-group-header-group');
+    if (!group || group.children.length < 2) return;
+
+    var firstSection = group.firstElementChild;
+    function measure() {
+      var h = firstSection.offsetHeight;
+      group.style.setProperty('--header-group-offset', h + 'px');
+    }
+
+    measure();
+
+    var ro = new ResizeObserver(measure);
+    ro.observe(firstSection);
+  })();
+</script>
+
+{% stylesheet %}
+
+  :root {
+    --header-height: 52px;
+  }
+
+  /* Header layout */
+  .header {
+    background-color: var(--color-bg);
+    color: var(--color-text);
+    border-bottom: 1px solid hsla(0, 0%, 0%, 0.1);
+  }
+
+  .header-container {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    padding: var(--spacing-base);
+    gap: var(--spacing-base);
+  }
+
+  /* Left column: nav + hamburger */
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-base);
+    justify-self: start;
+  }
+
+  /* Logo (center column) */
+  .header-logo {
+    display: flex;
+    align-items: center;
+    justify-self: center;
+  }
+
+  .header-logo img {
+    height: auto;
+    max-height: 40px;
+    width: auto;
+  }
+
+  /* Desktop navigation */
+  .header-nav {
+    display: none;
+    align-items: center;
+    gap: var(--spacing-base);
+  }
+
+  @media (min-width: 900px) {
+    .header-nav {
+      display: flex;
+    }
+  }
+
+  /* Right column: search + cart */
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-base);
+    justify-self: end;
+  }
+
+  .header-icon {
+    display: flex;
+    align-items: center;
+    position: relative;
+  }
+
+  /* Cart count badge */
+  .cart-count {
+    position: absolute;
+    top: -4px;
+    right: -6px;
+    min-width: 16px;
+    height: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: 600;
+    background-color: var(--color-text);
+    color: var(--color-bg);
+    border-radius: 50%;
+    padding: 0 4px;
+    line-height: 1;
+  }
+
+  /* Mobile menu toggle */
+  .header-menu-toggle {
+    display: flex;
+    align-items: center;
+  }
+
+  @media (min-width: 900px) {
+    .header-menu-toggle {
+      display: none;
+    }
+  }
+
+  /* Mobile menu */
+  mobile-menu {
+    position: fixed;
+    inset: 0;
+    z-index: 99;
+    pointer-events: none;
+  }
+
+  mobile-menu.is-open {
+    pointer-events: auto;
+  }
+
+  .mobile-menu-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    opacity: 0;
+    transition: opacity var(--transition-slow);
+  }
+
+  mobile-menu.is-open .mobile-menu-overlay {
+    opacity: 1;
+  }
+
+  .mobile-menu-panel {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    max-width: 320px;
+    height: 100%;
+    background: var(--color-bg);
+    color: var(--color-text);
+    transform: translateX(-100%);
+    transition: transform var(--transition-slow);
+    display: flex;
+    flex-direction: column;
+  }
+
+  mobile-menu.is-open .mobile-menu-panel {
+    transform: translateX(0);
+  }
+
+  .mobile-menu-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-base);
+    border-bottom: 1px solid hsla(0, 0%, 0%, 0.1);
+  }
+
+  .mobile-menu-title {
+    margin: 0;
+  }
+
+  .mobile-menu-close {
+    display: block;
+    background: none;
+    border: none;
+    cursor: pointer;
+    line-height: 0;
+  }
+
+  .mobile-menu-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: var(--spacing-base);
+  }
+
+  .mobile-menu-nav {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-s);
+  }
+
+  .mobile-menu-link {
+    display: block;
+    padding: var(--spacing-s) 0;
+    font-size: var(--type-medium-size);
+    line-height: var(--type-medium-height);
+  }
+
+  /* Prevent body scroll when menu open */
+  body.menu-open {
+    overflow: hidden;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .mobile-menu-overlay,
+    .mobile-menu-panel {
+      transition: none;
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Header",
+  "settings": [
+    {
+      "type": "image_picker",
+      "id": "logo",
+      "label": "Logo"
+    },
+    {
+      "type": "link_list",
+      "id": "menu",
+      "label": "Navigation menu",
+      "default": "main-menu"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-1"
+    }
+  ]
+}
+{% endschema %}

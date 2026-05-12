@@ -1,0 +1,195 @@
+{% comment %}
+  Renders the filter drawer for collection pages.
+
+  Expects:
+    - collection: the current collection object
+
+  Usage:
+    {% render 'filter-drawer', collection: collection %}
+{% endcomment %}
+
+<filter-drawer id="filter-drawer" class="filter-drawer"
+  aria-hidden="true" role="dialog" aria-modal="true"
+  aria-label="{{ 'collections.filtering.filters' | t }}">
+  <div class="filter-drawer-overlay" data-overlay></div>
+  <div class="filter-drawer-panel">
+    <div class="filter-drawer-header">
+      <h2 class="filter-drawer-title">{{ 'collections.filtering.filters' | t }}</h2>
+      <button class="filter-drawer-close" data-close
+        aria-label="{{ 'collections.filtering.close' | t }}">
+        {% render 'icon-close' %}
+      </button>
+    </div>
+    <div class="filter-drawer-body">
+      {% render 'collection-filters', collection: collection %}
+    </div>
+    <div class="filter-drawer-footer">
+      <button type="submit" form="filter-form" class="button">{{ 'collections.filtering.apply' | t }}</button>
+      <a href="{{ collection.url }}" class="button secondary" data-clear-filters>{{ 'collections.filtering.clear' | t }}</a>
+    </div>
+  </div>
+</filter-drawer>
+<script type="module" src="{{ 'filter-drawer.js' | asset_url }}"></script>
+
+{% stylesheet %}
+  /* Filter drawer — slides from left */
+  .filter-drawer {
+    position: fixed;
+    inset: 0;
+    z-index: 99;
+    pointer-events: none;
+  }
+
+  .filter-drawer.is-open {
+    pointer-events: auto;
+  }
+
+  .filter-drawer-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    opacity: 0;
+    transition: opacity var(--transition-slow);
+  }
+
+  .filter-drawer.is-open .filter-drawer-overlay {
+    opacity: 1;
+  }
+
+  .filter-drawer-panel {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    max-width: 420px;
+    height: 100%;
+    background: var(--color-bg);
+    transform: translateX(-100%);
+    transition: transform var(--transition-slow);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .filter-drawer.is-open .filter-drawer-panel {
+    transform: translateX(0);
+  }
+
+  .filter-drawer-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-base);
+    border-bottom: 1px solid hsla(0, 0%, 0%, 0.1);
+  }
+
+  .filter-drawer-title {
+    margin: 0;
+  }
+
+  .filter-drawer-close {
+    display: block;
+    background: none;
+    border: none;
+    cursor: pointer;
+    line-height: 0;
+  }
+
+  .filter-drawer-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: var(--spacing-base);
+  }
+
+  body.filter-drawer-open {
+    overflow: hidden;
+  }
+
+  /* Filter form spacing */
+  .filter-form details + details {
+    margin-top: var(--spacing-base);
+  }
+
+  .filter-form summary {
+    font-weight: 600;
+    cursor: pointer;
+    padding: var(--spacing-s) 0;
+  }
+
+  .filter-form .filter-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-xs);
+    padding-top: var(--spacing-s);
+  }
+
+  /* Filter pills — hidden checkbox with styled span */
+  .filter-pill {
+    cursor: pointer;
+  }
+
+  .filter-pill input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .filter-pill span {
+    display: block;
+    padding: var(--spacing-s) var(--spacing-base);
+    border-radius: 2px;
+    background-color: var(--color-white);
+    box-shadow: 1px 2px 8px hsla(0, 0%, 0%, 0.1);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .filter-pill:hover span {
+    transform: translateY(-2px);
+    box-shadow: 1px 4px 8px hsla(0, 0%, 0%, 0.1);
+  }
+
+  .filter-pill:active span {
+    transform: translateY(1px);
+    background-color: hsl(0, 0%, 95%);
+    box-shadow: 1px 1px 5px hsla(0, 0%, 0%, 0.05);
+  }
+
+  .filter-pill input:checked + span {
+    background-color: black;
+    color: white;
+    box-shadow: 1px 2px 8px hsla(0, 0%, 0%, 0.1);
+  }
+
+  .filter-pill input:disabled + span {
+    opacity: 0.4;
+    pointer-events: none;
+  }
+
+  .filter-form .filter-price-range {
+    display: flex;
+    gap: var(--spacing-s);
+  }
+
+  .filter-form .filter-price-range .form-group {
+    flex: 1;
+  }
+
+  /* Filter drawer footer */
+  .filter-drawer-footer {
+    display: flex;
+    gap: var(--spacing-s);
+    padding: var(--spacing-base);
+    border-top: 1px solid hsla(0, 0%, 0%, 0.1);
+  }
+
+  .filter-drawer-footer .button {
+    flex: 1;
+  }
+
+  /* Reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    .filter-drawer-overlay,
+    .filter-drawer-panel {
+      transition: none;
+    }
+  }
+{% endstylesheet %}

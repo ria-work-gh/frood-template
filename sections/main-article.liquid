@@ -1,0 +1,176 @@
+<article class="article color-{{ section.settings.color_scheme }}">
+  <div class="article-container">
+    <a href="{{ blog.url }}" class="article-back text-link">
+      &larr; {{ 'blogs.article.back_to_blog' | t: blog_title: blog.title }}
+    </a>
+
+    <header class="article-header">
+      <h1 class="article-title text-large">{{ article.title }}</h1>
+
+      {%- if section.settings.show_author or section.settings.show_date -%}
+        <div class="article-meta text-mini text-light">
+          {%- if section.settings.show_author -%}
+            <span>{{ 'blogs.article.author' | t: author: article.author }}</span>
+          {%- endif -%}
+          {%- if section.settings.show_author and section.settings.show_date -%}
+            <span aria-hidden="true">&middot;</span>
+          {%- endif -%}
+          {%- if section.settings.show_date -%}
+            <time datetime="{{ article.published_at | date: '%Y-%m-%d' }}">
+              {{ 'blogs.article.date' | t: date: article.published_at | date: format: 'abbreviated_date' }}
+            </time>
+          {%- endif -%}
+        </div>
+      {%- endif -%}
+    </header>
+
+    {%- if article.image -%}
+      <div class="article-image">
+        {{ article.image | image_url: width: 1200 | image_tag:
+          loading: 'eager',
+          width: article.image.width,
+          height: article.image.height
+        }}
+      </div>
+    {%- endif -%}
+
+    <div class="article-content typeset">
+      {{ article.content }}
+    </div>
+
+    <footer class="article-footer">
+      {%- if section.settings.show_tags and article.tags.size > 0 -%}
+        <div class="article-tags">
+          <span class="article-tags-label">{{ 'blogs.article.tags' | t }}:</span>
+          {%- for tag in article.tags -%}
+            <a href="{{ blog.url }}/tagged/{{ tag | handle }}" class="text-link">
+              {{ tag }}{%- unless forloop.last -%},{%- endunless -%}
+            </a>
+          {%- endfor -%}
+        </div>
+      {%- endif -%}
+
+      {%- if section.settings.show_share -%}
+        {% render 'share-buttons', title: article.title, url: article.url %}
+      {%- endif -%}
+    </footer>
+  </div>
+
+  {%- if section.settings.show_related -%}
+    <div class="article-related">
+      <h2 class="article-related-heading text-medium">{{ 'blogs.article.related' | t }}</h2>
+      <div class="article-related-grid grid grid-3">
+        {%- for blog_article in blog.articles limit: 4 -%}
+          {%- unless blog_article.id == article.id -%}
+            {% render 'article-card', article: blog_article %}
+          {%- endunless -%}
+        {%- endfor -%}
+      </div>
+    </div>
+  {%- endif -%}
+</article>
+
+{%- if section.settings.show_share -%}
+  <script src="{{ 'share-buttons.js' | asset_url }}" defer></script>
+{%- endif -%}
+
+{% stylesheet %}
+  .article-container {
+    max-width: 720px;
+    margin-inline: auto;
+    padding: var(--spacing-l) var(--spacing-base);
+  }
+
+  @media (min-width: 600px) {
+    .article-container {
+      padding: var(--spacing-xl) var(--spacing-m);
+    }
+  }
+
+  .article-back {
+    display: inline-block;
+    margin-bottom: var(--spacing-m);
+  }
+
+  .article-meta {
+    margin-top: var(--spacing-s);
+  }
+
+  .article-image {
+    margin: var(--spacing-m) 0;
+  }
+
+  .article-image img {
+    width: 100%;
+    height: auto;
+  }
+
+  .article-footer {
+    margin-top: var(--spacing-m);
+    padding-top: var(--spacing-m);
+    border-top: 1px solid var(--color-text-light);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--spacing-base);
+  }
+
+  .article-related {
+    padding: var(--spacing-l) var(--spacing-base);
+  }
+
+  @media (min-width: 600px) {
+    .article-related {
+      padding: var(--spacing-l) var(--spacing-m);
+    }
+  }
+
+  .article-related-heading {
+    margin-bottom: var(--spacing-m);
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Article",
+  "settings": [
+    {
+      "type": "checkbox",
+      "id": "show_author",
+      "label": "Show author",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_date",
+      "label": "Show date",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_tags",
+      "label": "Show tags",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_share",
+      "label": "Show share buttons",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_related",
+      "label": "Show related articles",
+      "default": true
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-1"
+    }
+  ]
+}
+{% endschema %}

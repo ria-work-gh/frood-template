@@ -1,0 +1,78 @@
+{%- comment -%} Layout structure & conventions: .claude/conventions/architecture.md {%- endcomment -%}
+<!doctype html>
+<html lang="{{ request.locale.iso_code }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  {% render 'meta-tags' %}
+  {% render 'json-ld-organization' %}
+
+  {%- if template.name == 'index' -%}
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": {{ shop.name | json }},
+    "url": {{ shop.url | json }},
+    "potentialAction": {
+      "@type": "SearchAction",
+      "target": "{{ shop.url }}/search?q={search_term_string}",
+      "query-input": "required name=search_term_string"
+    }
+  }
+  </script>
+  {%- endif -%}
+
+  {%- if settings.favicon -%}
+    <link rel="icon" type="image/png" href="{{ settings.favicon | image_url: width: 32, height: 32 }}">
+  {%- endif -%}
+
+  <style>
+    @font-face {
+      font-family: 'Antarctica';
+      src: url('{{ "antarctica-beta-vf.ttf" | asset_url }}') format('truetype');
+      font-weight: 100 900;
+      font-style: normal;
+      font-display: swap;
+    }
+  </style>
+
+  {{ 'base.css' | asset_url | stylesheet_tag }}
+
+  {% style %}
+    {%- for scheme in settings.color_schemes -%}
+      .color-{{ scheme.id }} {
+        --color-bg: {{ scheme.settings.background }};
+        --color-text: {{ scheme.settings.text }};
+        --color-text-light: {{ scheme.settings.text | color_modify: 'alpha', 0.66 }};
+        --color-input-bg: {{ scheme.settings.text | color_modify: 'alpha', 0.1 }};
+        --color-input-bg-hover: {{ scheme.settings.text | color_modify: 'alpha', 0.15 }};
+        --color-button-bg: {{ scheme.settings.button_background }};
+        --color-button-text: {{ scheme.settings.button_text }};
+      }
+    {%- endfor -%}
+  {% endstyle %}
+
+  {{ content_for_header }}
+</head>
+<body data-cart-type="{{ settings.cart_type }}">
+  <a href="#main-content" class="skip-link">
+    {{ 'accessibility.skip_to_content' | t }}
+  </a>
+
+  {% sections 'header-group' %}
+
+  <main id="main-content">
+    {{ content_for_layout }}
+  </main>
+
+  {% sections 'footer-group' %}
+
+  {%- if settings.cart_type == 'drawer' -%}
+    {% section 'cart-drawer' %}
+  {%- endif -%}
+
+  {% section 'search-drawer' %}
+</body>
+</html>

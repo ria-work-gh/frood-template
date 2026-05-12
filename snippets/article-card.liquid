@@ -1,0 +1,27 @@
+{% comment %}
+  Renders an article card for blog listing and related articles.
+
+  Expects:
+    - article: article object
+
+  Usage:
+    {% render 'article-card', article: article %}
+{% endcomment %}
+
+<article class="article-card">
+  <a href="{{ article.url }}" class="article-card-link">
+    {%- if article.image -%}
+      <div class="article-card-image aspect-landscape">
+        {{ article.image | image_url: width: 800 | image_tag: loading: 'lazy' }}
+      </div>
+    {%- endif -%}
+
+    <div class="article-card-info">
+      <h3 class="article-card-title">{{ article.title }}</h3>
+      <time datetime="{{ article.published_at | date: '%Y-%m-%d' }}">
+        {{ article.published_at | date: format: 'abbreviated' }}
+      </time>
+      <p class="article-card-excerpt">{{ article.excerpt_or_content | strip_html | truncate: 150 }}</p>
+    </div>
+  </a>
+</article>

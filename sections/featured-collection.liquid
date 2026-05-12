@@ -1,0 +1,207 @@
+<section class="featured-collection color-{{ section.settings.color_scheme }}">
+  <div class="featured-collection-header">
+    {%- if section.settings.heading != blank -%}
+      <h2 class="featured-collection-heading text-cap">{{ section.settings.heading }}</h2>
+    {%- endif -%}
+
+    {%- if section.settings.collection != blank and section.settings.show_view_all and section.settings.collection.all_products_count > section.settings.products_to_show -%}
+      <a href="{{ section.settings.collection.url }}" class="featured-collection-view-all text-link">
+        {{ 'sections.featured_collection.view_all' | t }} &rarr;
+      </a>
+    {%- endif -%}
+  </div>
+
+  {%- if section.settings.collection != blank -%}
+    <featured-collection-carousel
+      aria-roledescription="carousel"
+      aria-label="{{ section.settings.heading | escape }}"
+    >
+      <div class="featured-collection-carousel-viewport">
+        <div class="featured-collection-carousel-container">
+          {%- for product in section.settings.collection.products limit: section.settings.products_to_show -%}
+            <div
+              class="featured-collection-carousel-slide"
+              role="group"
+              aria-roledescription="slide"
+              aria-label="{{ product.title | escape }}"
+            >
+              {% render 'product-card', product: product %}
+            </div>
+          {%- endfor -%}
+        </div>
+      </div>
+
+      {%- if section.settings.collection.products_count > 1 -%}
+       {% comment %} TODO: Add carousel arrows {% endcomment %}
+      {%- endif -%}
+    </featured-collection-carousel>
+  {%- else -%}
+    <div class="featured-collection-carousel-container">
+      {%- for i in (1..section.settings.products_to_show) -%}
+        <div class="featured-collection-carousel-slide">
+          <div class="placeholder-card" aria-hidden="true"></div>
+        </div>
+      {%- endfor -%}
+    </div>
+  {%- endif -%}
+</section>
+
+{% stylesheet %}
+  .featured-collection {
+    padding: var(--spacing-l) var(--spacing-base);
+    color: var(--color-text);
+    background-color: var(--color-bg);
+    overflow: hidden;
+  }
+
+  .featured-collection-header {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--spacing-base);
+    align-items: baseline;
+    margin-bottom: var(--spacing-base);
+  }
+
+
+
+  /* Carousel */
+  .featured-collection-carousel-viewport {
+    /* overflow: hidden; */
+  }
+
+  .featured-collection-carousel-container {
+    display: flex;
+    gap: var(--spacing-base);
+  }
+
+  .featured-collection-carousel-slide {
+    flex: 0 0 100%;
+    min-width: 0;
+  }
+
+  @media (min-width: 600px) {
+    .featured-collection-carousel-slide {
+      flex: 0 0 calc((100% - var(--spacing-base)) / 2);
+    }
+  }
+
+  @media (min-width: 900px) {
+    .featured-collection-carousel-slide {
+      flex: 0 0 calc((100% - 2 * var(--spacing-base)) / 3);
+    }
+  }
+
+  @media (min-width: 1200px) {
+    .featured-collection-carousel-slide {
+      flex: 0 0 calc((100% - 3 * var(--spacing-base)) / 4);
+    }
+  }
+
+  /* Arrows */
+  .featured-collection-carousel-arrows {
+    display: none;
+  }
+
+  featured-collection-carousel.is-initialized .featured-collection-carousel-arrows {
+    display: flex;
+    gap: var(--spacing-s);
+    justify-content: flex-end;
+    margin-top: var(--spacing-base);
+  }
+
+  .featured-collection-carousel-arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border: 1px solid currentColor;
+    border-radius: 50%;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+    transition: transform 0.15s ease;
+  }
+
+  .featured-collection-carousel-arrow:hover {
+    transform: translateY(-1px);
+  }
+
+  .featured-collection-carousel-arrow:active {
+    transform: translateY(0);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .featured-collection-carousel-arrow {
+      transition: none;
+    }
+  }
+
+  .placeholder-card {
+    aspect-ratio: 3 / 4;
+    background: var(--color-border, #e5e5e5);
+    border-radius: 2px;
+    animation: placeholder-pulse 1.5s ease-in-out infinite;
+  }
+
+  @keyframes placeholder-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .placeholder-card {
+      animation: none;
+    }
+  }
+{% endstylesheet %}
+
+<script src="{{ 'embla-carousel.umd.js' | asset_url }}" defer></script>
+<script src="{{ 'featured-collection-carousel.js' | asset_url }}" defer></script>
+
+{% schema %}
+{
+  "name": "Featured collection",
+  "tag": "section",
+  "class": "featured-collection-section",
+  "settings": [
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "Featured collection"
+    },
+    {
+      "type": "collection",
+      "id": "collection",
+      "label": "Collection"
+    },
+    {
+      "type": "range",
+      "id": "products_to_show",
+      "label": "Products to show",
+      "min": 2,
+      "max": 12,
+      "step": 1,
+      "default": 4
+    },
+    {
+      "type": "checkbox",
+      "id": "show_view_all",
+      "label": "Show 'View all' link",
+      "default": true
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-1"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Featured collection"
+    }
+  ]
+}
+{% endschema %}

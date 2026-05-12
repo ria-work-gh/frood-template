@@ -1,0 +1,18 @@
+{% comment %}
+  Share functionality using Web Share API with clipboard fallback.
+
+  Accepts optional:
+    - share_url: URL to share (defaults to current page)
+    - share_title: Title to share (defaults to page_title)
+
+  Usage:
+    {% render 'share-buttons' %}
+    {% render 'share-buttons', share_url: article.url, share_title: article.title %}
+{% endcomment %}
+
+<share-buttons hidden>
+  <input type="hidden" data-url value="{{ share_url | default: request.origin | append: request.path }}">
+  <input type="hidden" data-title value="{{ share_title | default: page_title }}">
+  <button type="button" class="button secondary share-button" data-share>{{ 'share.share' | t }}</button>
+  <span class="share-confirmation" data-confirmation hidden>{{ 'share.copied' | t }}</span>
+</share-buttons>

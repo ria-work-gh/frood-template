@@ -1,0 +1,40 @@
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "name": {{ shop.name | json }},
+  "url": {{ shop.url | json }},
+  {%- if settings.social_instagram != blank or settings.social_facebook != blank or settings.social_tiktok != blank or settings.social_twitter != blank or settings.social_pinterest != blank -%}
+  "sameAs": [
+    {%- liquid
+      assign social_links = ''
+      if settings.social_instagram != blank
+        assign social_links = social_links | append: settings.social_instagram | append: ','
+      endif
+      if settings.social_facebook != blank
+        assign social_links = social_links | append: settings.social_facebook | append: ','
+      endif
+      if settings.social_tiktok != blank
+        assign social_links = social_links | append: settings.social_tiktok | append: ','
+      endif
+      if settings.social_twitter != blank
+        assign social_links = social_links | append: settings.social_twitter | append: ','
+      endif
+      if settings.social_pinterest != blank
+        assign social_links = social_links | append: settings.social_pinterest | append: ','
+      endif
+      assign social_links = social_links | split: ','
+    -%}
+    {%- for link in social_links -%}
+      {%- if link != blank -%}
+        {{ link | json }}{%- unless forloop.last -%},{%- endunless -%}
+      {%- endif -%}
+    {%- endfor -%}
+  ],
+  {%- endif -%}
+  "logo": {
+    "@type": "ImageObject",
+    "url": {{ shop.brand.logo | image_url: width: 600 | prepend: 'https:' | json }}
+  }
+}
+</script>

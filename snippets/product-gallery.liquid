@@ -1,0 +1,279 @@
+{%- comment -%}
+  Renders product media gallery with Embla carousel.
+  Expects: product (product object)
+
+  Single media: plain render, no carousel.
+  Multi-media: Embla carousel with dots (mobile) and thumbnails (desktop).
+{%- endcomment -%}
+
+{%- if product.media.size == 1 -%}
+  {%- assign media = product.media[0] -%}
+  <div class="product-gallery product-gallery-single">
+    {%- if media.media_type == 'image' -%}
+      {{ media | image_url: width: 1200 | image_tag:
+        loading: 'eager',
+        alt: media.alt | default: product.title,
+        width: media.width,
+        height: media.height
+      }}
+    {%- elsif media.media_type == 'video' -%}
+      {{ media | video_tag: autoplay: false, controls: true }}
+    {%- elsif media.media_type == 'external_video' -%}
+      {%- if media.host == 'youtube' -%}
+        <iframe
+          src="https://www.youtube.com/embed/{{ media.external_id }}?enablejsapi=1"
+          allow="autoplay; encrypted-media"
+          allowfullscreen
+          loading="lazy"
+          title="{{ media.alt | default: product.title }}"
+        ></iframe>
+      {%- elsif media.host == 'vimeo' -%}
+        <iframe
+          src="https://player.vimeo.com/video/{{ media.external_id }}"
+          allow="autoplay; encrypted-media"
+          allowfullscreen
+          loading="lazy"
+          title="{{ media.alt | default: product.title }}"
+        ></iframe>
+      {%- endif -%}
+    {%- elsif media.media_type == 'model' -%}
+      {{ media | model_viewer_tag }}
+    {%- endif -%}
+  </div>
+
+{%- elsif product.media.size > 1 -%}
+  <product-gallery
+    class="product-gallery"
+    aria-roledescription="carousel"
+    aria-label="{{ 'products.product.gallery_label' | t }}"
+  >
+    <div class="product-gallery-viewport">
+      <div class="product-gallery-container">
+        {%- for media in product.media -%}
+          <div
+            class="product-gallery-slide"
+            role="group"
+            aria-roledescription="slide"
+            aria-label="{{ 'accessibility.slide_number' | t: number: forloop.index, total: product.media.size }}"
+            {% unless forloop.first %}aria-hidden="true"{% endunless %}
+            data-media-id="{{ media.id }}"
+            data-media-type="{{ media.media_type }}"
+          >
+            {%- if media.media_type == 'image' -%}
+              {{ media | image_url: width: 1200 | image_tag:
+                loading: forloop.first | ternary: 'eager', 'lazy',
+                alt: media.alt | default: product.title,
+                width: media.width,
+                height: media.height
+              }}
+            {%- elsif media.media_type == 'video' -%}
+              {{ media | video_tag: autoplay: false, controls: true }}
+            {%- elsif media.media_type == 'external_video' -%}
+              {%- if media.host == 'youtube' -%}
+                <iframe
+                  src="https://www.youtube.com/embed/{{ media.external_id }}?enablejsapi=1"
+                  allow="autoplay; encrypted-media"
+                  allowfullscreen
+                  loading="lazy"
+                  title="{{ media.alt | default: product.title }}"
+                ></iframe>
+              {%- elsif media.host == 'vimeo' -%}
+                <iframe
+                  src="https://player.vimeo.com/video/{{ media.external_id }}"
+                  allow="autoplay; encrypted-media"
+                  allowfullscreen
+                  loading="lazy"
+                  title="{{ media.alt | default: product.title }}"
+                ></iframe>
+              {%- endif -%}
+            {%- elsif media.media_type == 'model' -%}
+              {{ media | model_viewer_tag }}
+            {%- endif -%}
+          </div>
+        {%- endfor -%}
+      </div>
+    </div>
+
+    <div class="product-gallery-dots" role="tablist" aria-label="{{ 'products.product.gallery_navigation' | t }}">
+      {%- for media in product.media -%}
+        <button
+          class="product-gallery-dot{% if forloop.first %} is-active{% endif %}"
+          role="tab"
+          aria-selected="{% if forloop.first %}true{% else %}false{% endif %}"
+          aria-label="{{ 'accessibility.slide_number' | t: number: forloop.index, total: product.media.size }}"
+          tabindex="{% if forloop.first %}0{% else %}-1{% endif %}"
+          data-index="{{ forloop.index0 }}"
+        ></button>
+      {%- endfor -%}
+    </div>
+
+    <div class="product-gallery-thumbs" aria-label="{{ 'products.product.gallery_thumbnails' | t }}">
+      <div class="product-gallery-thumbs-viewport">
+        <div class="product-gallery-thumbs-container">
+          {%- for media in product.media -%}
+            <button
+              class="product-gallery-thumb{% if forloop.first %} is-active{% endif %}"
+              type="button"
+              data-index="{{ forloop.index0 }}"
+              aria-current="{% if forloop.first %}true{% else %}false{% endif %}"
+              aria-label="{{ 'accessibility.slide_number' | t: number: forloop.index, total: product.media.size }}"
+            >
+              {{ media.preview_image | image_url: width: 100 | image_tag:
+                loading: 'lazy',
+                alt: '',
+                width: media.preview_image.width,
+                height: media.preview_image.height
+              }}
+            </button>
+          {%- endfor -%}
+        </div>
+      </div>
+    </div>
+
+    <div class="product-gallery-live-region visually-hidden" aria-live="polite" aria-atomic="true"></div>
+  </product-gallery>
+{%- endif -%}
+
+{% stylesheet %}
+  .product-gallery,
+  .product-gallery-single {
+    position: relative;
+    display: block;
+    height: 100%;
+  }
+
+  .product-gallery-single img,
+  .product-gallery-single video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .product-gallery-single iframe {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border: 0;
+    display: block;
+  }
+
+  /* Embla essentials */
+  .product-gallery-viewport {
+    overflow: hidden;
+    height: 100%;
+  }
+
+  .product-gallery-container {
+    display: flex;
+    height: 100%;
+  }
+
+  .product-gallery-slide {
+    flex: 0 0 100%;
+    min-width: 0;
+    height: 100%;
+  }
+
+  .product-gallery-slide img,
+  .product-gallery-slide video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .product-gallery-slide iframe {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border: 0;
+    display: block;
+  }
+
+  /* Dots — mobile only */
+  .product-gallery-dots {
+    display: none;
+    justify-content: center;
+    align-items: center;
+    gap: var(--spacing-xs);
+    padding: var(--spacing-s) 0;
+  }
+
+  .product-gallery.is-initialized .product-gallery-dots {
+    display: none;
+  }
+
+  .product-gallery-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 2px solid currentColor;
+    background: transparent;
+    padding: 0;
+    cursor: pointer;
+    transition: background var(--transition-fast, 0.2s ease);
+  }
+
+  .product-gallery-dot.is-active {
+    background: currentColor;
+  }
+
+  /* Thumbnails — overlaid on carousel */
+  .product-gallery-thumbs {
+    display: none;
+    position: absolute;
+    bottom: var(--spacing-s);
+    left: var(--spacing-s);
+    z-index: 1;
+  }
+
+  .product-gallery.is-initialized .product-gallery-thumbs {
+    display: block;
+  }
+
+  .product-gallery-thumbs-viewport {
+    overflow: hidden;
+  }
+
+  .product-gallery-thumbs-container {
+    display: flex;
+    gap: var(--spacing-xs);
+  }
+
+  .product-gallery-thumb {
+    flex: 0 0 64px;
+    width: 64px;
+    height: 64px;
+    padding: 0;
+    border: 2px solid transparent;
+    background: none;
+    cursor: pointer;
+    overflow: hidden;
+    transition: border-color var(--transition-fast, 0.2s ease);
+  }
+
+  .product-gallery-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .product-gallery-thumb.is-active {
+    border-color: var(--color-text);
+  }
+
+  /* Reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    .product-gallery-container,
+    .product-gallery-thumbs-container {
+      transition: none !important;
+    }
+
+    .product-gallery-dot,
+    .product-gallery-thumb {
+      transition: none !important;
+    }
+  }
+{% endstylesheet %}

@@ -1,0 +1,169 @@
+{%- if section.blocks.size > 0 -%}
+  <section
+    class="rich-text color-{{ section.settings.color_scheme }}"
+    style="text-align: {{ section.settings.text_alignment }};"
+  >
+    <div class="rich-text-container{% if section.settings.narrow_width %} rich-text-narrow{% endif %}">
+      {%- for block in section.blocks -%}
+        {%- case block.type -%}
+          {%- when 'heading' -%}
+            {%- if block.settings.text != blank -%}
+              <h2 class="rich-text-heading text-xl" {{ block.shopify_attributes }}>
+                {{ block.settings.text }}
+              </h2>
+            {%- endif -%}
+
+          {%- when 'text' -%}
+            {%- if block.settings.text != blank -%}
+              <div class="typeset" {{ block.shopify_attributes }}>
+                {{ block.settings.text }}
+              </div>
+            {%- endif -%}
+
+          {%- when 'button' -%}
+            {%- if block.settings.text != blank and block.settings.link != blank -%}
+              <a
+                href="{{ block.settings.link }}"
+                class="button{% if block.settings.style == 'secondary' %} secondary{% endif %} rich-text-button"
+                {{ block.shopify_attributes }}
+              >
+                {{ block.settings.text }}
+              </a>
+            {%- endif -%}
+        {%- endcase -%}
+      {%- endfor -%}
+    </div>
+  </section>
+{%- endif -%}
+
+{% stylesheet %}
+  .rich-text {
+    padding: var(--spacing-l) var(--spacing-base);
+  }
+
+  @media (min-width: 600px) {
+    .rich-text {
+      padding: var(--spacing-xl) var(--spacing-base);
+    }
+  }
+
+  .rich-text-container {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-base);
+  }
+
+  .rich-text-narrow {
+    max-width: 500px;
+    margin-inline: auto;
+  }
+
+  .rich-text-heading {
+    margin: 0;
+  }
+
+  .rich-text-button {
+    align-self: flex-start;
+  }
+
+  .rich-text[style*="center"] .rich-text-button {
+    align-self: center;
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Rich text",
+  "tag": "section",
+  "class": "rich-text-section",
+  "settings": [
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-1"
+    },
+    {
+      "type": "select",
+      "id": "text_alignment",
+      "label": "Text alignment",
+      "options": [
+        { "value": "left", "label": "Left" },
+        { "value": "center", "label": "Center" },
+        { "value": "right", "label": "Right" }
+      ],
+      "default": "center"
+    },
+    {
+      "type": "checkbox",
+      "id": "narrow_width",
+      "label": "Narrow width",
+      "default": true,
+      "info": "Constrains content to a comfortable reading width"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "heading",
+      "name": "Heading",
+      "settings": [
+        {
+          "type": "text",
+          "id": "text",
+          "label": "Heading",
+          "default": "Rich text"
+        }
+      ]
+    },
+    {
+      "type": "text",
+      "name": "Text",
+      "settings": [
+        {
+          "type": "richtext",
+          "id": "text",
+          "label": "Content",
+          "default": "<p>Share your brand story, introduce your products, or welcome customers to your store.</p>"
+        }
+      ]
+    },
+    {
+      "type": "button",
+      "name": "Button",
+      "limit": 2,
+      "settings": [
+        {
+          "type": "text",
+          "id": "text",
+          "label": "Button text",
+          "default": "Learn more"
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "Link"
+        },
+        {
+          "type": "select",
+          "id": "style",
+          "label": "Style",
+          "options": [
+            { "value": "primary", "label": "Primary" },
+            { "value": "secondary", "label": "Secondary" }
+          ],
+          "default": "primary"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Rich text",
+      "blocks": [
+        { "type": "heading" },
+        { "type": "text" }
+      ]
+    }
+  ]
+}
+{% endschema %}

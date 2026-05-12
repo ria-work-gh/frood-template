@@ -1,0 +1,54 @@
+/*
+ * ------------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin theme editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * ------------------------------------------------------------
+ */
+{
+  "current": {
+    "cart_type": "drawer",
+    "product_card_aspect_ratio": "portrait",
+    "sections": {
+      "cart-drawer": {
+        "type": "cart-drawer",
+        "settings": {
+          "upsell_heading": "You may also like",
+          "upsell_collection": ""
+        }
+      }
+    },
+    "content_for_index": [],
+    "color_schemes": {
+      "scheme-1": {
+        "settings": {
+          "background": "#ffffff",
+          "text": "#000000",
+          "text_light": "#666666",
+          "button_background": "#000000",
+          "button_text": "#ffffff"
+        }
+      },
+      "scheme-2": {
+        "settings": {
+          "background": "#000000",
+          "text": "#ffffff",
+          "text_light": "#a0a0a0",
+          "button_background": "#ffffff",
+          "button_text": "#000000"
+        }
+      },
+      "scheme-3": {
+        "settings": {
+          "background": "#f5f5f5",
+          "text": "#000000",
+          "text_light": "#666666",
+          "button_background": "#000000",
+          "button_text": "#ffffff"
+        }
+      }
+    }
+  }
+}

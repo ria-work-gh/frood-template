@@ -1,0 +1,190 @@
+<div class="search-page color-{{ section.settings.color_scheme }}">
+  <header class="search-header">
+    <h1 class="search-title text-cap">{{ 'search.general.title' | t }}</h1>
+
+    <form action="{{ routes.search_url }}" method="get" class="search-form" role="search">
+      <div class="form-inline">
+        <input
+          type="search"
+          name="q"
+          class="input"
+          value="{{ search.terms | escape }}"
+          placeholder="{{ 'search.general.placeholder' | t }}"
+          aria-label="{{ 'search.general.title' | t }}"
+        >
+        <button type="submit" class="button button-primary">
+          {{ 'search.general.submit' | t }}
+        </button>
+      </div>
+    </form>
+  </header>
+
+  {%- if search.performed -%}
+    <div class="search-results-header">
+      <p class="search-results-count">
+        {{ 'search.general.results_count' | t: count: search.results_count, terms: search.terms }}
+      </p>
+
+      {%- assign search_type_count = search.types | size -%}
+      <nav class="search-tabs filter-bar" aria-label="Filter results">
+        <a
+          href="{{ routes.search_url }}?q={{ search.terms | url_encode }}"
+          class="tab-button {% if search_type_count != 1 %}current{% endif %}"
+        >
+          {{ 'search.tabs.all' | t }}
+        </a>
+        <a
+          href="{{ routes.search_url }}?q={{ search.terms | url_encode }}&type=product"
+          class="tab-button {% if search_type_count == 1 and search.types contains 'product' %}current{% endif %}"
+        >
+          {{ 'search.tabs.products' | t }}
+        </a>
+        <a
+          href="{{ routes.search_url }}?q={{ search.terms | url_encode }}&type=page"
+          class="tab-button {% if search_type_count == 1 and search.types contains 'page' %}current{% endif %}"
+        >
+          {{ 'search.tabs.pages' | t }}
+        </a>
+        <a
+          href="{{ routes.search_url }}?q={{ search.terms | url_encode }}&type=article"
+          class="tab-button {% if search_type_count == 1 and search.types contains 'article' %}current{% endif %}"
+        >
+          {{ 'search.tabs.articles' | t }}
+        </a>
+      </nav>
+    </div>
+
+    {%- paginate search.results by section.settings.products_per_page -%}
+      {%- if search.results.size > 0 -%}
+        <div class="search-results">
+          {%- assign product_results = search.results | where: 'object_type', 'product' -%}
+          {%- if product_results.size > 0 -%}
+            <div class="search-products grid grid-{{ section.settings.grid_columns }}">
+              {%- for item in search.results -%}
+                {%- if item.object_type == 'product' -%}
+                  {% render 'product-card', product: item %}
+                {%- endif -%}
+              {%- endfor -%}
+            </div>
+          {%- endif -%}
+
+          {%- assign article_results = search.results | where: 'object_type', 'article' -%}
+          {%- if article_results.size > 0 -%}
+            <div class="search-articles">
+              {%- for item in search.results -%}
+                {%- if item.object_type == 'article' -%}
+                  {% render 'article-card', article: item %}
+                {%- endif -%}
+              {%- endfor -%}
+            </div>
+          {%- endif -%}
+
+          {%- assign page_results = search.results | where: 'object_type', 'page' -%}
+          {%- if page_results.size > 0 -%}
+            <div class="search-pages">
+              {%- for item in search.results -%}
+                {%- if item.object_type == 'page' -%}
+                  <div class="search-page-result">
+                    <h3><a href="{{ item.url }}">{{ item.title }}</a></h3>
+                    <p class="text-light">{{ item.content | strip_html | truncate: 150 }}</p>
+                  </div>
+                {%- endif -%}
+              {%- endfor -%}
+            </div>
+          {%- endif -%}
+        </div>
+
+        {% render 'pagination', paginate: paginate %}
+      {%- else -%}
+        <div class="search-empty">
+          <p>{{ 'search.general.no_results' | t: terms: search.terms }}</p>
+          <p class="text-light">{{ 'search.general.no_results_message' | t }}</p>
+        </div>
+      {%- endif -%}
+    {%- endpaginate -%}
+  {%- endif -%}
+</div>
+
+{% stylesheet %}
+  .search-page {
+    padding: var(--spacing-base);
+  }
+
+  .search-header {
+    margin-block: var(--spacing-xl);
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--spacing-base);
+  }
+
+  .search-form {
+    max-width: 600px;
+    width: 100%;
+  }
+
+  .search-results-header {
+    margin-bottom: var(--spacing-base);
+  }
+
+  .search-tabs {
+    margin-top: var(--spacing-base);
+  }
+
+  .search-results {
+    margin-top: var(--spacing-base);
+  }
+
+  .search-articles,
+  .search-pages {
+    margin-top: var(--spacing-m);
+  }
+
+  .search-page-result {
+    padding: var(--spacing-base) 0;
+    border-bottom: 1px solid var(--color-text-light);
+  }
+
+  .search-page-result h3 {
+    margin-bottom: var(--spacing-xs);
+  }
+
+  .search-empty {
+    text-align: center;
+    padding: var(--spacing-xl) 0;
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Search",
+  "settings": [
+    {
+      "type": "range",
+      "id": "products_per_page",
+      "label": "Results per page",
+      "min": 8,
+      "max": 24,
+      "step": 4,
+      "default": 12
+    },
+    {
+      "type": "select",
+      "id": "grid_columns",
+      "label": "Product grid columns (desktop)",
+      "options": [
+        { "value": "3", "label": "3 columns" },
+        { "value": "4", "label": "4 columns" }
+      ],
+      "default": "4"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-1"
+    }
+  ]
+}
+{% endschema %}

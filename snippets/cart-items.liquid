@@ -1,0 +1,13 @@
+{% comment %}
+  Renders the list of cart line items.
+  Used in both cart page and cart drawer.
+
+  Usage:
+    {% render 'cart-items', cart: cart %}
+{% endcomment %}
+
+<div class="cart-items">
+  {%- for item in cart.items -%}
+    {% render 'cart-item', item: item %}
+  {%- endfor -%}
+</div>

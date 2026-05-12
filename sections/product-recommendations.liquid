@@ -1,0 +1,127 @@
+<product-recommendations
+  class="product-recommendations color-{{ section.settings.color_scheme }}"
+  data-url="{{ routes.product_recommendations_url }}?section_id={{ section.id }}&product_id={{ product.id }}&limit={{ section.settings.products_to_show }}&intent=related"
+>
+  {%- if recommendations.performed? -%}
+    {%- if recommendations.products_count > 0 -%}
+      {%- if section.settings.heading != blank -%}
+        <h2 class="product-recommendations-heading text-cap">{{ section.settings.heading }}</h2>
+      {%- endif -%}
+
+      <div class="product-recommendations-grid grid grid-{{ section.settings.grid_columns }}">
+        {%- for product in recommendations.products -%}
+          {% render 'product-card', product: product %}
+        {%- endfor -%}
+      </div>
+    {%- endif -%}
+  {%- else -%}
+    {%- comment -%} Skeleton placeholders shown until JS fetches recommendations {%- endcomment -%}
+    {%- if section.settings.heading != blank -%}
+      <h2 class="product-recommendations-heading text-cap">{{ section.settings.heading }}</h2>
+    {%- endif -%}
+
+    <div class="product-recommendations-grid grid grid-{{ section.settings.grid_columns }}">
+      {%- for i in (1..section.settings.products_to_show) -%}
+        <div class="placeholder-card" aria-hidden="true"></div>
+      {%- endfor -%}
+    </div>
+  {%- endif -%}
+</product-recommendations>
+
+<script type="module" src="{{ 'product-recommendations.js' | asset_url }}"></script>
+
+{% stylesheet %}
+  .product-recommendations {
+    display: block;
+    padding: var(--spacing-l) var(--spacing-base);
+    color: var(--color-text);
+    background-color: var(--color-bg);
+    overflow: hidden;
+  }
+
+  .product-recommendations-heading {
+    margin-bottom: var(--spacing-base);
+  }
+
+  .product-recommendations-grid {
+    display: grid;
+    gap: var(--spacing-base);
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  @media (min-width: 600px) {
+    .product-recommendations-grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+
+  @media (min-width: 900px) {
+    .product-recommendations-grid.grid-4 {
+      grid-template-columns: repeat(4, 1fr);
+    }
+  }
+
+  .placeholder-card {
+    aspect-ratio: 3 / 4;
+    background: var(--color-border, #e5e5e5);
+    border-radius: 2px;
+    animation: placeholder-pulse 1.5s ease-in-out infinite;
+  }
+
+  @keyframes placeholder-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .placeholder-card {
+      animation: none;
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Product recommendations",
+  "tag": "section",
+  "class": "product-recommendations-section",
+  "settings": [
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "You may also like"
+    },
+    {
+      "type": "range",
+      "id": "products_to_show",
+      "label": "Products to show",
+      "min": 2,
+      "max": 10,
+      "step": 1,
+      "default": 4
+    },
+    {
+      "type": "select",
+      "id": "grid_columns",
+      "label": "Grid columns (desktop)",
+      "options": [
+        { "value": "3", "label": "3 columns" },
+        { "value": "4", "label": "4 columns" }
+      ],
+      "default": "4"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-1"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Product recommendations"
+    }
+  ]
+}
+{% endschema %}

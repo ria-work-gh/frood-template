@@ -1,0 +1,43 @@
+<div class="page color-{{ section.settings.color_scheme }}">
+  <header class="page-header">
+    <h1 class="page-title text-large">{{ page.title }}</h1>
+  </header>
+
+  {%- if page.content != blank -%}
+    <div class="page-content typeset">
+      {{ page.content }}
+    </div>
+  {%- endif -%}
+</div>
+
+{% stylesheet %}
+  .page {
+    padding: var(--spacing-l) var(--spacing-base);
+    max-width: 720px;
+    margin-inline: auto;
+  }
+
+  @media (min-width: 600px) {
+    .page {
+      padding: var(--spacing-xl) var(--spacing-m);
+    }
+  }
+
+  .page-title {
+    margin-bottom: var(--spacing-m);
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Page",
+  "settings": [
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-1"
+    }
+  ]
+}
+{% endschema %}

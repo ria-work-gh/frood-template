@@ -1,0 +1,148 @@
+<div class="page-contact color-{{ section.settings.color_scheme }}">
+  <header class="page-contact-header">
+    <h1 class="page-contact-title text-large">{{ page.title }}</h1>
+  </header>
+
+  {%- if page.content != blank -%}
+    <div class="page-contact-content typeset">
+      {{ page.content }}
+    </div>
+  {%- endif -%}
+
+  <div class="page-contact-form-wrapper">
+    {% form 'contact', class: 'page-contact-form' %}
+      {%- if form.posted_successfully? -%}
+        <p class="form-success" role="alert">
+          {{ 'pages.contact.success' | t }}
+        </p>
+      {%- endif -%}
+
+      {%- if form.errors -%}
+        <div class="page-contact-errors" role="alert">
+          {{ form.errors | default_errors }}
+        </div>
+      {%- endif -%}
+
+      <div class="page-contact-field">
+        <label for="contact-name" class="form-label">
+          {{ 'pages.contact.name' | t }}
+          <span aria-hidden="true">*</span>
+        </label>
+        <input
+          type="text"
+          id="contact-name"
+          name="contact[{{ 'pages.contact.name' | t }}]"
+          class="input"
+          required
+          aria-required="true"
+          value="{{ form.name }}"
+        >
+      </div>
+
+      <div class="page-contact-field">
+        <label for="contact-email" class="form-label">
+          {{ 'pages.contact.email' | t }}
+          <span aria-hidden="true">*</span>
+        </label>
+        <input
+          type="email"
+          id="contact-email"
+          name="contact[email]"
+          class="input"
+          required
+          aria-required="true"
+          autocomplete="email"
+          value="{{ form.email }}"
+        >
+      </div>
+
+      <div class="page-contact-field">
+        <label for="contact-phone" class="form-label">
+          {{ 'pages.contact.phone' | t }}
+        </label>
+        <input
+          type="tel"
+          id="contact-phone"
+          name="contact[{{ 'pages.contact.phone' | t }}]"
+          class="input"
+          autocomplete="tel"
+          value="{{ form.phone }}"
+        >
+      </div>
+
+      <div class="page-contact-field">
+        <label for="contact-message" class="form-label">
+          {{ 'pages.contact.message' | t }}
+          <span aria-hidden="true">*</span>
+        </label>
+        <textarea
+          id="contact-message"
+          name="contact[{{ 'pages.contact.message' | t }}]"
+          class="input textarea"
+          required
+          aria-required="true"
+          rows="6"
+        >{{ form.body }}</textarea>
+      </div>
+
+      <button type="submit" class="button">
+        {{ 'pages.contact.submit' | t }}
+      </button>
+    {% endform %}
+  </div>
+</div>
+
+{% stylesheet %}
+  .page-contact {
+    padding: var(--spacing-l) var(--spacing-base);
+    max-width: 720px;
+    margin-inline: auto;
+    color: var(--color-text);
+    background-color: var(--color-bg);
+  }
+
+  @media (min-width: 600px) {
+    .page-contact {
+      padding: var(--spacing-xl) var(--spacing-m);
+    }
+  }
+
+  .page-contact-form-wrapper {
+    margin-top: var(--spacing-m);
+  }
+
+  .form-success {
+    padding: var(--spacing-s);
+    background: var(--color-success, #d4edda);
+    border-radius: 4px;
+    margin-bottom: var(--spacing-base);
+  }
+
+  .page-contact-errors {
+    padding: var(--spacing-s);
+    background: var(--color-error-bg, #f8d7da);
+    border-radius: 4px;
+    margin-bottom: var(--spacing-base);
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Contact",
+  "tag": "section",
+  "class": "main-page-contact-section",
+  "settings": [
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-1"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Contact"
+    }
+  ]
+}
+{% endschema %}

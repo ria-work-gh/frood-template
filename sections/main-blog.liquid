@@ -1,0 +1,98 @@
+<div class="blog color-{{ section.settings.color_scheme }}">
+  <header class="blog-header">
+    <h1 class="blog-title text-large">{{ blog.title }}</h1>
+
+    {%- if blog.all_tags.size > 0 -%}
+      <nav class="blog-tags filter-bar" aria-label="{{ 'blogs.article.tags' | t }}">
+        <a
+          href="{{ blog.url }}"
+          class="tab-button {% if current_tags == blank %}current{% endif %}"
+        >
+          {{ 'blogs.general.all_tags' | t }}
+        </a>
+        {%- for tag in blog.all_tags -%}
+          <a
+            href="{{ blog.url }}/tagged/{{ tag | handle }}"
+            class="tab-button {% if current_tags contains tag %}current{% endif %}"
+          >
+            {{ tag }}
+          </a>
+        {%- endfor -%}
+      </nav>
+    {%- endif -%}
+  </header>
+
+  {%- paginate blog.articles by section.settings.articles_per_page -%}
+    {%- if blog.articles.size > 0 -%}
+      <div class="blog-grid grid grid-{{ section.settings.grid_columns }}">
+        {%- for article in blog.articles -%}
+          {% render 'article-card', article: article %}
+        {%- endfor -%}
+      </div>
+
+      {% render 'pagination', paginate: paginate %}
+    {%- else -%}
+      <div class="blog-empty">
+        <p>{{ 'blogs.general.no_articles' | t }}</p>
+      </div>
+    {%- endif -%}
+  {%- endpaginate -%}
+</div>
+
+{% stylesheet %}
+  .blog {
+    padding: var(--spacing-l) var(--spacing-base);
+  }
+
+  @media (min-width: 600px) {
+    .blog {
+      padding: var(--spacing-xl) var(--spacing-m);
+    }
+  }
+
+  .blog-header {
+    margin-bottom: var(--spacing-m);
+  }
+
+  .blog-tags {
+    margin-top: var(--spacing-base);
+  }
+
+  .blog-empty {
+    text-align: center;
+    padding: var(--spacing-xl) 0;
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Blog",
+  "settings": [
+    {
+      "type": "range",
+      "id": "articles_per_page",
+      "label": "Articles per page",
+      "min": 3,
+      "max": 24,
+      "step": 3,
+      "default": 9
+    },
+    {
+      "type": "select",
+      "id": "grid_columns",
+      "label": "Grid columns (desktop)",
+      "options": [
+        { "value": "2", "label": "2 columns" },
+        { "value": "3", "label": "3 columns" }
+      ],
+      "default": "3"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-1"
+    }
+  ]
+}
+{% endschema %}

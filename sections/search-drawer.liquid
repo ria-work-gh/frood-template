@@ -1,0 +1,247 @@
+<search-drawer
+  id="search-drawer"
+  class="search-drawer"
+  role="dialog"
+  aria-modal="true"
+  aria-hidden="true"
+  aria-label="{{ 'search.drawer.title' | t }}"
+  data-products-heading="{{ 'search.drawer.products' | t }}"
+  data-articles-heading="{{ 'search.drawer.articles' | t }}"
+  data-pages-heading="{{ 'search.drawer.pages' | t }}"
+  data-view-all-text="{{ 'search.drawer.view_all' | t }}"
+  data-no-results-template="{{ 'search.drawer.no_results' | t: terms: '__TERMS__' }}"
+>
+  <div class="search-drawer-overlay" data-overlay></div>
+
+  <div class="search-drawer-panel">
+    <div class="search-drawer-header">
+      <h2 class="search-drawer-title">{{ 'search.drawer.title' | t }}</h2>
+      <button class="search-drawer-close" data-close aria-label="{{ 'search.drawer.close' | t }}">
+        {% render 'icon-close' %}
+      </button>
+    </div>
+
+    <div class="search-drawer-body">
+      <form action="{{ routes.search_url }}" method="get" role="search" class="search-drawer-form">
+        <label for="search-drawer-input" class="visually-hidden">{{ 'search.general.placeholder' | t }}</label>
+        <input
+          id="search-drawer-input"
+          type="search"
+          name="q"
+          placeholder="{{ 'search.general.placeholder' | t }}"
+          autocomplete="off"
+          autocorrect="off"
+          autocapitalize="off"
+          spellcheck="false"
+          class="input"
+          data-input
+        >
+        <button type="submit" class="search-drawer-submit" aria-label="{{ 'search.general.submit' | t }}">
+          {% render 'icon-search' %}
+        </button>
+      </form>
+
+      <div class="search-drawer-results" data-results aria-live="polite"></div>
+      <div class="search-drawer-empty" data-empty hidden></div>
+    </div>
+  </div>
+</search-drawer>
+
+<script src="{{ 'search-drawer.js' | asset_url }}" defer></script>
+
+{% stylesheet %}
+  .search-drawer {
+    position: fixed;
+    inset: 0;
+    z-index: 99;
+    pointer-events: none;
+  }
+
+  .search-drawer.is-open {
+    pointer-events: auto;
+  }
+
+  .search-drawer-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    opacity: 0;
+    transition: opacity var(--transition-slow);
+  }
+
+  .search-drawer.is-open .search-drawer-overlay {
+    opacity: 1;
+  }
+
+  .search-drawer-panel {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 100%;
+    max-width: 420px;
+    height: 100%;
+    background: var(--color-bg);
+    color: var(--color-text);
+    transform: translateX(100%);
+    transition: transform var(--transition-slow);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .search-drawer.is-open .search-drawer-panel {
+    transform: translateX(0);
+  }
+
+  .search-drawer-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-base);
+    border-bottom: 1px solid hsla(0, 0%, 0%, 0.1);
+  }
+
+  .search-drawer-title {
+    margin: 0;
+  }
+
+  .search-drawer-close {
+    display: block;
+    background: none;
+    border: none;
+    cursor: pointer;
+    line-height: 0;
+  }
+
+  .search-drawer-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: var(--spacing-base);
+  }
+
+  .search-drawer-form {
+    position: relative;
+  }
+
+  .search-drawer-form .input {
+    width: 100%;
+    padding-right: 40px;
+  }
+
+  .search-drawer-submit {
+    position: absolute;
+    right: var(--spacing-xs);
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--spacing-xs);
+    background: none;
+    border: none;
+    cursor: pointer;
+    line-height: 0;
+    opacity: 0.5;
+    transition: opacity var(--transition-fast);
+  }
+
+  .search-drawer-submit:hover {
+    opacity: 1;
+  }
+
+  .search-drawer-submit:active {
+    opacity: 0.7;
+  }
+
+  .search-drawer-results {
+    margin-top: var(--spacing-base);
+  }
+
+  .search-drawer.is-loading .search-drawer-results {
+    opacity: 0.6;
+    pointer-events: none;
+  }
+
+  .search-drawer-results-group {
+    margin-bottom: var(--spacing-base);
+  }
+
+  .search-drawer-results-heading {
+    font-size: var(--type-mini-size);
+    line-height: var(--type-mini-height);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: var(--spacing-s);
+    color: var(--color-text-light);
+  }
+
+  .search-drawer-result-item {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-s);
+    padding: var(--spacing-s) 0;
+    text-decoration: none;
+    color: inherit;
+  }
+
+  .search-drawer-result-item + .search-drawer-result-item {
+    border-top: 1px solid hsla(0, 0%, 0%, 0.05);
+  }
+
+  .search-drawer-result-image {
+    width: 48px;
+    height: 48px;
+    object-fit: cover;
+    flex-shrink: 0;
+  }
+
+  .search-drawer-result-info {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .search-drawer-result-title {
+    display: block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .search-drawer-result-price {
+    display: block;
+    font-size: var(--type-mini-size);
+    color: var(--color-text-light);
+  }
+
+  .search-drawer-view-all {
+    display: block;
+    text-align: center;
+    padding: var(--spacing-s) 0;
+    margin-top: var(--spacing-s);
+    border-top: 1px solid hsla(0, 0%, 0%, 0.1);
+    color: inherit;
+  }
+
+  .search-drawer-empty {
+    margin-top: var(--spacing-base);
+    color: var(--color-text-light);
+  }
+
+  body.search-drawer-open {
+    overflow: hidden;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .search-drawer-overlay,
+    .search-drawer-panel {
+      transition: none;
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Search drawer",
+  "class": "search-drawer-section",
+  "settings": []
+}
+{% endschema %}

@@ -1,0 +1,92 @@
+{%- if section.settings.text != blank -%}
+  <announcement-bar class="announcement-bar color-{{ section.settings.color_scheme }}" role="region" aria-label="{{ section.settings.text }}" data-dismiss-key="{{ section.settings.text | md5 | truncate: 8, '' }}">
+    {%- if section.settings.link != blank -%}
+      <a href="{{ section.settings.link }}" class="announcement-bar-content">
+        {{ section.settings.text }}
+      </a>
+    {%- else -%}
+      <p class="announcement-bar-content">{{ section.settings.text }}</p>
+    {%- endif -%}
+
+    {%- if section.settings.dismissible -%}
+      <button class="announcement-bar-close" aria-label="{{ 'header.dismiss_announcement' | t }}" data-dismiss>
+        {% render 'icon-close' %}
+      </button>
+    {%- endif -%}
+  </announcement-bar>
+
+  <script src="{{ 'announcement-bar.js' | asset_url }}" defer></script>
+{%- endif -%}
+
+{% stylesheet %}
+  .announcement-bar {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--spacing-s) var(--spacing-m);
+    text-align: center;
+    background-color: var(--color-bg);
+    color: var(--color-text);
+  }
+
+  .announcement-bar-content {
+    flex: 1;
+    margin: 0;
+  }
+
+  .announcement-bar-close {
+    position: absolute;
+    right: var(--spacing-s);
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--spacing-xs);
+    background: none;
+    border: none;
+    color: inherit;
+    cursor: pointer;
+  }
+
+  .announcement-bar-close:hover {
+    opacity: 0.7;
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Announcement bar",
+  "settings": [
+    {
+      "type": "text",
+      "id": "text",
+      "label": "Announcement text",
+      "default": "Free shipping on orders over $100"
+    },
+    {
+      "type": "url",
+      "id": "link",
+      "label": "Link"
+    },
+    {
+      "type": "checkbox",
+      "id": "dismissible",
+      "label": "Allow dismissal",
+      "default": true
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-2"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Announcement bar"
+    }
+  ]
+}
+{% endschema %}

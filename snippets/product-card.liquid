@@ -1,0 +1,174 @@
+{%- comment -%}
+  Renders a product card for collection grids and featured collections.
+  Expects: product (product object)
+{%- endcomment -%}
+
+<article class="product-card">
+  <div class="product-card-image aspect-{{ settings.product_card_aspect_ratio }}">
+    <a href="{{ product.url }}" class="product-card-image-link" tabindex="-1" aria-hidden="true">
+      {%- if product.featured_image -%}
+        {{
+          product.featured_image
+          | image_url: width: 1200
+          | image_tag:
+            loading: 'lazy',
+            sizes: '(min-width: 1200px) 25vw, (min-width: 900px) 33vw, (min-width: 600px) 50vw, 100vw',
+            width: product.featured_image.width,
+            height: product.featured_image.height
+        }}
+
+        {%- if product.media.size > 1 and product.media[1].media_type == 'image' -%}
+          {{
+            product.media[1]
+            | image_url: width: 1200
+            | image_tag:
+              loading: 'lazy',
+              sizes: '(min-width: 1200px) 25vw, (min-width: 900px) 33vw, (min-width: 600px) 50vw, 100vw',
+              width: product.media[1].width,
+              height: product.media[1].height,
+              class: 'product-card-image-hover'
+          }}
+        {%- endif -%}
+      {%- else -%}
+        <div class="product-card-placeholder"></div>
+      {%- endif -%}
+    </a>
+
+    {%- comment -%}
+      Badge priority: Sold out > Sale > New. Only one badge renders.
+
+      Merchant-controlled badges (future):
+      Add a product metafield `custom.badge` (single_line_text_field) in
+      Shopify Admin > Settings > Custom data > Products. Merchants type
+      free text like "Limited edition" or "Pre-order". To implement:
+        1. Check `product.metafields.custom.badge` first in the priority
+           chain below (before sold-out, or after — your call).
+        2. Optionally pair with a `custom.badge_color` metafield or a
+           fixed list of values via metafield validation to control style.
+        3. Add a `.product-card-badge.custom` CSS modifier if needed.
+    {%- endcomment -%}
+
+    {%- liquid
+      assign badge_text = ''
+      assign badge_type = ''
+
+      unless product.available
+        assign badge_text = 'products.product.sold_out' | t
+        assign badge_type = 'sold-out'
+      endunless
+
+      if badge_text == '' and product.compare_at_price > product.price
+        assign badge_text = 'products.product.sale' | t
+        assign badge_type = 'sale'
+      endif
+
+      if badge_text == ''
+        assign now_s = 'now' | date: '%s' | plus: 0
+        assign created_s = product.created_at | date: '%s' | plus: 0
+        assign age_days = now_s | minus: created_s | divided_by: 86400
+        if age_days <= 30
+          assign badge_text = 'products.product.new' | t
+          assign badge_type = 'new'
+        endif
+      endif
+    -%}
+
+    {%- if badge_text != '' -%}
+      <span class="product-card-badge {{ badge_type }}">{{ badge_text }}</span>
+    {%- endif -%}
+
+    {%- if product.available -%}
+      <div class="product-card-quick-add">
+        {%- if product.has_only_default_variant -%}
+          <quick-add>
+            <button
+              type="button"
+              class="button product-card-quick-add-button"
+              data-variant-id="{{ product.selected_or_first_available_variant.id }}"
+            >
+              {{ 'products.product.quick_add' | t }}
+            </button>
+          </quick-add>
+        {%- else -%}
+          <a href="{{ product.url }}" class="button product-card-quick-add-button">
+            {{ 'products.product.choose_options' | t }}
+          </a>
+        {%- endif -%}
+      </div>
+    {%- endif -%}
+  </div>
+
+  <a href="{{ product.url }}" class="product-card-info">
+    <h3 class="text-cap">{{ product.title }}</h3>
+    <div class="product-card-price">
+      {% render 'product-price', product: product %}
+    </div>
+  </a>
+</article>
+
+<script type="module" src="{{ 'quick-add.js' | asset_url }}"></script>
+
+{% stylesheet %}
+  .product-card-info {
+    padding-top: var(--spacing-s);
+    display: grid;
+    gap: var(--spacing-xs);
+  }
+
+  .product-card-image {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .product-card-placeholder {
+    width: 100%;
+    height: 100%;
+    background: #e5e5e5;
+  }
+
+  .product-card-badge {
+    position: absolute;
+    top: var(--spacing-s);
+    right: var(--spacing-s);
+    background: var(--color-black);
+    color: var(--color-white);
+    font-size: var(--font-size-mini);
+    line-height: var(--line-height-mini);
+    padding: var(--spacing-xxs) var(--spacing-xs);
+  }
+
+  .product-card-badge.sale {
+    background: var(--color-green);
+    color: var(--color-black);
+  }
+
+  .product-card-quick-add {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: var(--spacing-s);
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity var(--transition-fast), transform var(--transition-fast);
+    pointer-events: none;
+  }
+
+  @media (hover: hover) {
+    .product-card:hover .product-card-quick-add {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: auto;
+    }
+  }
+
+  .product-card-quick-add-button {
+    width: 100%;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .product-card-quick-add {
+      transition: none;
+    }
+  }
+{% endstylesheet %}

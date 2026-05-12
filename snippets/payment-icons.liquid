@@ -1,0 +1,3 @@
+{%- for type in shop.enabled_payment_types -%}
+  <span class="payment-icon">{{ type | payment_type_svg_tag }}</span>
+{%- endfor -%}

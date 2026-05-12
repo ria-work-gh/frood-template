@@ -1,0 +1,66 @@
+{% comment %}
+  Renders variant option selectors as radio pill fieldsets with a hidden
+  <select> fallback for noscript.
+  Expects: product (product object)
+{% endcomment %}
+
+{%- if product.has_only_default_variant == false -%}
+  {%- for option in product.options_with_values -%}
+    <fieldset class="variant-options">
+      <legend class="variant-label text-cap">{{ option.name }}</legend>
+      <div class="variant-pills">
+        {%- for value in option.values -%}
+          {%- assign variant_available = false -%}
+          {%- assign option_key = 'option' | append: option.position -%}
+          {%- for variant in product.variants -%}
+            {%- if variant[option_key] == value and variant.available -%}
+              {%- assign variant_available = true -%}
+              {%- break -%}
+            {%- endif -%}
+          {%- endfor -%}
+          <label class="variant-pill{% unless variant_available %} sold-out{% endunless %}">
+            <input
+              type="radio"
+              name="option-{{ option.name | handleize }}"
+              value="{{ value }}"
+              id="option-{{ option.name | handleize }}-{{ value | handleize }}"
+              {% if option.selected_value == value %}
+                checked
+              {% endif %}
+            >
+            <span>{{ value }}</span>
+          </label>
+        {%- endfor -%}
+      </div>
+    </fieldset>
+  {%- endfor -%}
+
+  <noscript>
+    <select name="id">
+      {%- for variant in product.variants -%}
+        <option
+          value="{{ variant.id }}"
+          {% if variant == product.selected_or_first_available_variant %}
+            selected
+          {% endif %}
+          {% unless variant.available %}
+            disabled
+          {% endunless %}
+        >
+          {{ variant.title }} - {{ variant.price | money }}
+        </option>
+      {%- endfor -%}
+    </select>
+  </noscript>
+{%- endif -%}
+
+{% stylesheet %}
+  .variant-options {
+    border: 0;
+    margin: 0;
+    padding: 0;
+  }
+  .variant-label {
+    margin-bottom: var(--spacing-xs);
+  }
+{% endstylesheet %}
