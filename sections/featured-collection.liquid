@@ -1,46 +1,41 @@
+{%- comment -%}
+  Frood Featured Collection — editorial heading (eyebrow + heading + CTA) above a product grid.
+  Mobile: schema-selectable carousel (horizontal scroll-snap) or 1-column grid.
+  Tablet (≥600px): 2-column grid.
+  Desktop (≥900px): 4-column grid.
+  See CLAUDE.md → "Frood Homepage Sections" for rules.
+{%- endcomment -%}
+
 <section class="featured-collection color-{{ section.settings.color_scheme }}">
-  <div class="featured-collection-header">
-    {%- if section.settings.heading != blank -%}
-      <h2 class="featured-collection-heading text-cap">{{ section.settings.heading }}</h2>
+  <header class="featured-collection-header section-lockup">
+    {%- if section.settings.eyebrow != blank -%}
+      <h1 class="text-h1">{{ section.settings.eyebrow }}</h1>
     {%- endif -%}
 
-    {%- if section.settings.collection != blank and section.settings.show_view_all and section.settings.collection.all_products_count > section.settings.products_to_show -%}
-      <a href="{{ section.settings.collection.url }}" class="featured-collection-view-all text-link">
-        {{ 'sections.featured_collection.view_all' | t }} &rarr;
+    {%- if section.settings.heading != blank -%}
+      <h3 class="text-h3">{{ section.settings.heading | newline_to_br }}</h3>
+    {%- endif -%}
+
+    {%- if section.settings.button_text != blank -%}
+      <a
+        class="button"
+        href="{{ section.settings.button_link | default: '#' }}"
+      >
+        {{ section.settings.button_text }}
       </a>
     {%- endif -%}
-  </div>
+  </header>
 
   {%- if section.settings.collection != blank -%}
-    <featured-collection-carousel
-      aria-roledescription="carousel"
-      aria-label="{{ section.settings.heading | escape }}"
-    >
-      <div class="featured-collection-carousel-viewport">
-        <div class="featured-collection-carousel-container">
-          {%- for product in section.settings.collection.products limit: section.settings.products_to_show -%}
-            <div
-              class="featured-collection-carousel-slide"
-              role="group"
-              aria-roledescription="slide"
-              aria-label="{{ product.title | escape }}"
-            >
-              {% render 'product-card', product: product %}
-            </div>
-          {%- endfor -%}
-        </div>
-      </div>
-
-      {%- if section.settings.collection.products_count > 1 -%}
-       {% comment %} TODO: Add carousel arrows {% endcomment %}
-      {%- endif -%}
-    </featured-collection-carousel>
+    <div class="featured-collection-products mobile-{{ section.settings.mobile_layout }}">
+      {%- for product in section.settings.collection.products limit: section.settings.products_to_show -%}
+        {% render 'product-card', product: product %}
+      {%- endfor -%}
+    </div>
   {%- else -%}
-    <div class="featured-collection-carousel-container">
+    <div class="featured-collection-products mobile-{{ section.settings.mobile_layout }}">
       {%- for i in (1..section.settings.products_to_show) -%}
-        <div class="featured-collection-carousel-slide">
-          <div class="placeholder-card" aria-hidden="true"></div>
-        </div>
+        <div class="placeholder-card" aria-hidden="true"></div>
       {%- endfor -%}
     </div>
   {%- endif -%}
@@ -48,99 +43,77 @@
 
 {% stylesheet %}
   .featured-collection {
-    padding: var(--spacing-l) var(--spacing-base);
+    padding: var(--spacing-m);
     color: var(--color-text);
     background-color: var(--color-bg);
-    overflow: hidden;
   }
 
+  /* Lockup alignment + internal gaps come from .section-lockup (see base.css §22).
+     This rule only handles the gap between the lockup and the product grid below. */
   .featured-collection-header {
+    margin-bottom: var(--spacing-l);
+  }
+
+  .featured-collection-header h3 {
+    max-width: 36ch;
+  }
+
+  /* Mobile: carousel (horizontal scroll-snap) */
+  .featured-collection-products.mobile-carousel {
     display: flex;
-    justify-content: space-between;
-    gap: var(--spacing-base);
-    align-items: baseline;
-    margin-bottom: var(--spacing-base);
+    gap: var(--spacing-xs);
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+    padding-bottom: var(--spacing-xs);
   }
 
-
-
-  /* Carousel */
-  .featured-collection-carousel-viewport {
-    /* overflow: hidden; */
-  }
-
-  .featured-collection-carousel-container {
-    display: flex;
-    gap: var(--spacing-base);
-  }
-
-  .featured-collection-carousel-slide {
-    flex: 0 0 100%;
-    min-width: 0;
-  }
-
-  @media (min-width: 600px) {
-    .featured-collection-carousel-slide {
-      flex: 0 0 calc((100% - var(--spacing-base)) / 2);
-    }
-  }
-
-  @media (min-width: 900px) {
-    .featured-collection-carousel-slide {
-      flex: 0 0 calc((100% - 2 * var(--spacing-base)) / 3);
-    }
-  }
-
-  @media (min-width: 1200px) {
-    .featured-collection-carousel-slide {
-      flex: 0 0 calc((100% - 3 * var(--spacing-base)) / 4);
-    }
-  }
-
-  /* Arrows */
-  .featured-collection-carousel-arrows {
+  .featured-collection-products.mobile-carousel::-webkit-scrollbar {
     display: none;
   }
 
-  featured-collection-carousel.is-initialized .featured-collection-carousel-arrows {
-    display: flex;
-    gap: var(--spacing-s);
-    justify-content: flex-end;
-    margin-top: var(--spacing-base);
+  .featured-collection-products.mobile-carousel > * {
+    flex: 0 0 75%;
+    scroll-snap-align: start;
   }
 
-  .featured-collection-carousel-arrow {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 40px;
-    height: 40px;
-    border: 1px solid currentColor;
-    border-radius: 50%;
-    background: transparent;
-    color: inherit;
-    cursor: pointer;
-    transition: transform 0.15s ease;
+  /* Mobile: stacked grid (1 column) */
+  .featured-collection-products.mobile-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--spacing-xs);
   }
 
-  .featured-collection-carousel-arrow:hover {
-    transform: translateY(-1px);
-  }
+  /* Tablet+: 2-column grid (overrides both mobile modes) */
+  @media (min-width: 600px) {
+    .featured-collection-products.mobile-carousel,
+    .featured-collection-products.mobile-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: var(--spacing-xs);
+      overflow: visible;
+      padding-bottom: 0;
+    }
 
-  .featured-collection-carousel-arrow:active {
-    transform: translateY(0);
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .featured-collection-carousel-arrow {
-      transition: none;
+    .featured-collection-products.mobile-carousel > * {
+      flex: initial;
+      scroll-snap-align: none;
     }
   }
 
+  /* Desktop+: 4-column grid */
+  @media (min-width: 900px) {
+    .featured-collection-products.mobile-carousel,
+    .featured-collection-products.mobile-grid {
+      grid-template-columns: repeat(4, 1fr);
+    }
+  }
+
+  /* Placeholder card (when no collection is selected) */
   .placeholder-card {
     aspect-ratio: 3 / 4;
-    background: var(--color-border, #e5e5e5);
-    border-radius: 2px;
+    background: var(--color-border);
+    border-radius: var(--rad-s);
     animation: placeholder-pulse 1.5s ease-in-out infinite;
   }
 
@@ -156,9 +129,6 @@
   }
 {% endstylesheet %}
 
-<script src="{{ 'embla-carousel.umd.js' | asset_url }}" defer></script>
-<script src="{{ 'featured-collection-carousel.js' | asset_url }}" defer></script>
-
 {% schema %}
 {
   "name": "Featured collection",
@@ -167,9 +137,27 @@
   "settings": [
     {
       "type": "text",
+      "id": "eyebrow",
+      "label": "Eyebrow (h1 — small uppercase label)",
+      "default": "Our collection"
+    },
+    {
+      "type": "textarea",
       "id": "heading",
-      "label": "Heading",
-      "default": "Featured collection"
+      "label": "Heading (h3)",
+      "info": "Press Enter to add a line break.",
+      "default": "Real food, made simple.\nMade for modern home cooks."
+    },
+    {
+      "type": "text",
+      "id": "button_text",
+      "label": "Button label",
+      "default": "Our range"
+    },
+    {
+      "type": "url",
+      "id": "button_link",
+      "label": "Button link"
     },
     {
       "type": "collection",
@@ -183,13 +171,18 @@
       "min": 2,
       "max": 12,
       "step": 1,
-      "default": 4
+      "default": 8
     },
     {
-      "type": "checkbox",
-      "id": "show_view_all",
-      "label": "Show 'View all' link",
-      "default": true
+      "type": "select",
+      "id": "mobile_layout",
+      "label": "Mobile layout",
+      "info": "How products display on mobile. Tablet and desktop are always a grid.",
+      "options": [
+        { "value": "carousel", "label": "Carousel (horizontal scroll)" },
+        { "value": "grid", "label": "Grid (stacked)" }
+      ],
+      "default": "carousel"
     },
     {
       "type": "color_scheme",

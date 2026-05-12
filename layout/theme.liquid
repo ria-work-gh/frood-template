@@ -30,9 +30,16 @@
 
   <style>
     @font-face {
-      font-family: 'Antarctica';
-      src: url('{{ "antarctica-beta-vf.ttf" | asset_url }}') format('truetype');
-      font-weight: 100 900;
+      font-family: 'HW Left';
+      src: url('{{ "HW Left Trial Regular.otf" | asset_url }}') format('opentype');
+      font-weight: 400;
+      font-style: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: 'HW Left';
+      src: url('{{ "HW Left Trial Medium.otf" | asset_url }}') format('opentype');
+      font-weight: 500;
       font-style: normal;
       font-display: swap;
     }
@@ -46,8 +53,6 @@
         --color-bg: {{ scheme.settings.background }};
         --color-text: {{ scheme.settings.text }};
         --color-text-light: {{ scheme.settings.text | color_modify: 'alpha', 0.66 }};
-        --color-input-bg: {{ scheme.settings.text | color_modify: 'alpha', 0.1 }};
-        --color-input-bg-hover: {{ scheme.settings.text | color_modify: 'alpha', 0.15 }};
         --color-button-bg: {{ scheme.settings.button_background }};
         --color-button-text: {{ scheme.settings.button_text }};
       }

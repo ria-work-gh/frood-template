@@ -1,0 +1,65 @@
+{%- comment -%}
+  Frood Hero — full-bleed image background with the Frood logo centered in accent yellow.
+  100vh tall, fills page width. Logo is the inline SVG snippet logo-frood (recolorable via currentColor).
+  See CLAUDE.md → "Frood Hero section" for design rules.
+{%- endcomment -%}
+
+<section class="hero-frood">
+  <img
+    class="hero-frood-bg"
+    src="{{ 'dummy.jpg' | asset_url }}"
+    alt=""
+    loading="eager"
+    width="2400"
+    height="1600"
+  >
+
+  <div class="hero-frood-logo">
+    {% render 'logo-frood' %}
+  </div>
+</section>
+
+{% stylesheet %}
+  .hero-frood {
+    position: relative;
+    width: 100%;
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .hero-frood-bg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .hero-frood-logo {
+    position: relative;
+    z-index: 1;
+    width: 45vw;
+    color: var(--color-accent);
+  }
+
+  .hero-frood-logo svg {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Frood Hero",
+  "tag": "section",
+  "class": "section-frood-hero",
+  "settings": [],
+  "presets": [
+    { "name": "Frood Hero" }
+  ]
+}
+{% endschema %}

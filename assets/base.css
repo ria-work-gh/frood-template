@@ -97,21 +97,35 @@ summary::-webkit-details-marker {
 /* ========== 2. Custom Properties ========== */
 
 :root {
-  /* Raw palette */
-  --color-black: black;
-  --color-white: white;
-  --color-green: #34dc0e;
+  /* Frood palette */
+  --color-text: #36262b;
+  --color-text-accent: #979193;
+  --color-bg: #fffef9;
+  --color-bg-dark: #dfdcd4;
+  --color-accent: #ffe74b;
+  --color-accent-light: #f7f0c1;
 
-  /* Semantic colors */
-  --color-text: hsla(0, 0%, 0%, 1);
-  --color-text-light: hsla(0, 0%, 0%, 0.5);
-  --color-bg: var(--color-white);
-  --color-success: #d4edda;
+  /* Semantic alias — kept for existing references */
+  --color-text-light: var(--color-text-accent);
+
+  /* Functional UI states (not brand) */
+  --color-success: var(--color-accent-light);
   --color-error-bg: #f8d7da;
 
-  --color-button-text: hsla(0, 0%, 100%, 1);
-  --color-button-bg: hsla(0, 0%, 0%, 1);
-  --color-button-bg-active: hsla(0, 0%, 20%, 1);
+  /* Form input backgrounds — brand-locked, identical across all color schemes */
+  --color-input-bg: var(--color-bg-dark);
+  --color-input-bg-hover: var(--color-accent-light);
+
+  /* Translucent overlays — derived from text color so they adapt to color schemes */
+  --color-border: color-mix(in srgb, var(--color-text) 10%, transparent);
+  --color-shadow-soft: color-mix(in srgb, var(--color-text) 5%, transparent);
+  --color-nav: color-mix(in srgb, var(--color-bg-dark) 80%, transparent);
+  --color-overlay: color-mix(in srgb, var(--color-text) 10%, transparent);
+
+  /* Note: legacy --color-button-* tokens removed — Frood's primary button uses brand tokens
+     directly (--color-accent, --color-text). The scheme picker in theme.liquid still emits
+     --color-button-bg / --color-button-text for Shopify checkout role mapping, but they no longer
+     drive any on-page CSS. */
 
   /* Typography */
   --type-cap-spacing: 0.066em;
@@ -132,19 +146,54 @@ summary::-webkit-details-marker {
   --type-xl-size: 32px;
   --type-xl-height: 34px;
 
+  /* Frood semantic typography — see CLAUDE.md "Frood Typography" */
+  --type-h1-size: 12px;
+  --type-h1-height: 1.1em;
+  --type-h1-spacing: 0.01em;
+  --type-h1-weight: 400;
+
+  --type-h2-size: 36px;
+  --type-h2-height: 1.1em;
+  --type-h2-spacing: 0em;
+  --type-h2-weight: 500;
+
+  --type-h3-size: 24px;
+  --type-h3-height: 1.1em;
+  --type-h3-spacing: 0em;
+  --type-h3-weight: 500;
+
+  --type-body-size: 14px;
+  --type-body-height: 1.1em;
+  --type-body-spacing: 0em;
+  --type-body-weight: 400;
+
+  --type-ui-size: 14px;
+  --type-ui-height: 1.2em;
+  --type-ui-spacing: 0em;
+  --type-ui-weight: 500;
+
   /* Spacing */
-  --spacing-xxs: 2px;
-  --spacing-xs: 4px;
-  --spacing-s: 8px;
-  --spacing-base: 16px;
-  --spacing-m: 32px;
+  --spacing-xxxs: 4px;
+  --spacing-xxs: 8px;
+  --spacing-xs: 12px;
+  --spacing-s: 16px;
+  --spacing-m: 24px;
   --spacing-l: 64px;
   --spacing-xl: 128px;
-  --spacing-xxl: 256px;
+  --spacing-xxl: 192px;
+
+  /* Alias — many existing rules reference --spacing-base */
+  --spacing-base: var(--spacing-s);
 
   /* Transitions */
   --transition-fast: 0.2s ease;
   --transition-slow: 0.5s ease;
+
+  /* Border radius */
+  --rad-s: 2px;
+
+  /* Blur */
+  --blur: 10px;
 }
 
 @media (min-width: 900px) {
@@ -185,7 +234,7 @@ summary::-webkit-details-marker {
 /* ========== 4. Body Defaults ========== */
 
 body {
-  font-family: "Antarctica", sans-serif;
+  font-family: "HW Left", sans-serif;
   font-size: var(--type-base-size);
   line-height: var(--type-base-height);
   color: var(--color-text);
@@ -219,10 +268,52 @@ body {
 .text-xl {
   font-size: var(--type-xl-size);
   line-height: var(--type-xl-height);
-  font-family: "Antarctica", sans-serif;
-  font-weight: bold;
+  font-family: "HW Left", sans-serif;
+  font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.02em;
+}
+
+/* Frood semantic typography — usage rules in CLAUDE.md */
+.text-h1 {
+  font-family: "HW Left", sans-serif;
+  font-size: var(--type-h1-size);
+  line-height: var(--type-h1-height);
+  letter-spacing: var(--type-h1-spacing);
+  font-weight: var(--type-h1-weight);
+  text-transform: uppercase;
+}
+
+.text-h2 {
+  font-family: "HW Left", sans-serif;
+  font-size: var(--type-h2-size);
+  line-height: var(--type-h2-height);
+  letter-spacing: var(--type-h2-spacing);
+  font-weight: var(--type-h2-weight);
+}
+
+.text-h3 {
+  font-family: "HW Left", sans-serif;
+  font-size: var(--type-h3-size);
+  line-height: var(--type-h3-height);
+  letter-spacing: var(--type-h3-spacing);
+  font-weight: var(--type-h3-weight);
+}
+
+.text-body {
+  font-family: "HW Left", sans-serif;
+  font-size: var(--type-body-size);
+  line-height: var(--type-body-height);
+  letter-spacing: var(--type-body-spacing);
+  font-weight: var(--type-body-weight);
+}
+
+.text-ui {
+  font-family: "HW Left", sans-serif;
+  font-size: var(--type-ui-size);
+  line-height: var(--type-ui-height);
+  letter-spacing: var(--type-ui-spacing);
+  font-weight: var(--type-ui-weight);
 }
 
 .text-cap {
@@ -277,31 +368,36 @@ body {
 }
 
 /* ========== 7. Buttons ========== */
+/* Frood has ONE button: .button (primary). Low-emphasis actions use .inline-link instead.
+   See CLAUDE.md "Buttons" section for the rules. */
 
 .button {
   display: inline-flex;
   justify-content: center;
-  padding: var(--spacing-s) var(--spacing-base);
-  background-color: var(--color-button-bg);
-  color: var(--color-button-text);
-  border-radius: 2px;
-  box-shadow: 1px 2px 8px hsla(0, 0%, 0%, 0.1);
-  transition: transform var(--transition-fast);
+  align-items: center;
+  /* Asymmetric vertical padding for optical balance with the text-h1 type */
+  padding: var(--spacing-xxs) var(--spacing-xs) 7px;
+  background-color: var(--color-accent);
+  color: var(--color-text);
+  border: none;
+  border-radius: var(--rad-s);
+
+  /* text-h1 typography baked in, but button labels are always Medium (overrides h1's Regular) */
+  font-family: "HW Left", sans-serif;
+  font-size: var(--type-h1-size);
+  line-height: var(--type-h1-height);
+  letter-spacing: var(--type-h1-spacing);
+  font-weight: 500;
+  text-transform: uppercase;
+
+  transition:
+    background-color var(--transition-fast),
+    color var(--transition-fast);
 }
 
 .button:hover {
-  transform: translateY(-2px);
-}
-
-.button:active {
-  transform: translateY(1px);
-  background-color: var(--color-button-bg-active);
-}
-
-.button.secondary {
-  --color-button-bg: hsla(0, 0%, 0%, 0.10);
-  --color-button-text: black;
-  --color-button-bg-active: hsla(0, 0%, 0%, 0.2);
+  background-color: var(--color-text);
+  color: var(--color-accent);
 }
 
 .button:disabled,
@@ -320,7 +416,7 @@ body {
   position: absolute;
   width: 16px;
   height: 16px;
-  border: 2px solid var(--color-button-text);
+  border: 2px solid currentColor;
   border-right-color: transparent;
   border-radius: 50%;
   animation: spin 0.6s linear infinite;
@@ -340,7 +436,7 @@ body {
   padding: var(--spacing-s);
   background-color: var(--color-input-bg);
   border: 1px solid var(--color-text-light);
-  border-radius: 2px;
+  border-radius: var(--rad-s);
   transition: border-color var(--transition-fast);
 }
 
@@ -429,7 +525,7 @@ body {
   gap: var(--spacing-xs);
   cursor: pointer;
   padding: var(--spacing-s);
-  border-radius: 2px;
+  border-radius: var(--rad-s);
   background-color: var(--color-input-bg);
   transition: transform var(--transition-fast);
 }
@@ -474,9 +570,9 @@ body {
 .variant-pill span {
   display: block;
   padding: var(--spacing-s) var(--spacing-base);
-  border-radius: 2px;
-  background-color: var(--color-white);
-  box-shadow: 1px 2px 8px hsla(0, 0%, 0%, 0.1);
+  border-radius: var(--rad-s);
+  background-color: var(--color-bg);
+  box-shadow: 1px 2px 8px var(--color-border);
   transition:
     transform 0.2s ease,
     box-shadow 0.2s ease;
@@ -484,19 +580,19 @@ body {
 
 .variant-pill:hover span {
   transform: translateY(-2px);
-  box-shadow: 1px 4px 8px hsla(0, 0%, 0%, 0.1);
+  box-shadow: 1px 4px 8px var(--color-border);
 }
 
 .variant-pill:active span {
   transform: translateY(1px);
-  background-color: hsl(0, 0%, 95%);
-  box-shadow: 1px 1px 5px hsla(0, 0%, 0%, 0.05);
+  background-color: var(--color-bg-dark);
+  box-shadow: 1px 1px 5px var(--color-shadow-soft);
 }
 
 .variant-pill input:checked + span {
-  background-color: black;
-  color: white;
-  box-shadow: 1px 2px 8px hsla(0, 0%, 0%, 0.1);
+  background-color: var(--color-text);
+  color: var(--color-bg);
+  box-shadow: 1px 2px 8px var(--color-border);
 }
 
 .variant-pill.sold-out span {
@@ -512,19 +608,19 @@ body {
   padding: var(--spacing-xs) var(--spacing-s);
   font-size: 12px;
   font-weight: 500;
-  border-radius: 2px;
+  border-radius: var(--rad-s);
   background: var(--color-text);
   color: var(--color-bg);
 }
 
 .badge-sale {
-  background: #dc2626;
-  color: white;
+  background: var(--color-accent);
+  color: var(--color-text);
 }
 
 .badge-new {
-  background: #16a34a;
-  color: white;
+  background: var(--color-text);
+  color: var(--color-bg);
 }
 
 .badge-soldout {
@@ -679,9 +775,9 @@ body {
 .quantity-selector {
   display: inline-flex;
   align-items: center;
-  border: 1px solid hsla(0, 0%, 0%, 0.1);
-  background-color: white;
-  border-radius: 2px;
+  border: 1px solid var(--color-border);
+  background-color: var(--color-bg);
+  border-radius: var(--rad-s);
 }
 
 .quantity-selector button {
@@ -693,7 +789,7 @@ body {
 }
 
 .quantity-selector button:hover {
-  background: hsla(0, 0%, 0%, 0.05);
+  background: var(--color-shadow-soft);
 }
 .quantity-selector button:active {
   transform: scale(0.9);
@@ -703,8 +799,8 @@ body {
   width: 3em;
   padding: var(--spacing-s);
   text-align: center;
-  border-left: 1px solid hsla(0, 0%, 0%, 0.1);
-  border-right: 1px solid hsla(0, 0%, 0%, 0.1);
+  border-left: 1px solid var(--color-border);
+  border-right: 1px solid var(--color-border);
   font-size: inherit;
   -moz-appearance: textfield;
 }
@@ -740,11 +836,11 @@ body {
 /* ========== 19. Tab Buttons & Filter Bar ========== */
 
 .tab-button {
-  color: black;
-  background-color: var(--color-white);
+  color: var(--color-text);
+  background-color: var(--color-bg);
   padding: var(--spacing-s);
-  border-radius: 2px;
-  box-shadow: 1px 2px 8px hsla(0, 0%, 0%, 0.1);
+  border-radius: var(--rad-s);
+  box-shadow: 1px 2px 8px var(--color-border);
   transition:
     transform 0.2s ease,
     box-shadow 0.2s ease;
@@ -752,18 +848,18 @@ body {
 
 .tab-button:hover {
   transform: translateY(-2px);
-  box-shadow: 1px 4px 8px hsla(0, 0%, 0%, 0.1);
+  box-shadow: 1px 4px 8px var(--color-border);
 }
 
 .tab-button:active {
   transform: translateY(1px);
-  background-color: hsl(0, 0%, 95%);
-  box-shadow: 1px 1px 5px hsla(0, 0%, 0%, 0.05);
+  background-color: var(--color-bg-dark);
+  box-shadow: 1px 1px 5px var(--color-shadow-soft);
 }
 
 .tab-button.current {
-  background-color: black;
-  color: white;
+  background-color: var(--color-text);
+  color: var(--color-bg);
 }
 
 .tab-button.external::after {
@@ -817,4 +913,28 @@ body {
   position: sticky;
   top: calc(-1 * var(--header-group-offset, 0px));
   z-index: 9;
+}
+
+/* ========== 22. Section Lockup ========== */
+/* Reusable heading + supporting text + CTA composition used across sections.
+   Markup convention: <div class="section-lockup">…heading elements…<a class="button">…</a></div>
+   Default gap between heading elements: --spacing-xs. Gap before a .button: --spacing-m. */
+
+.section-lockup {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+}
+
+.section-lockup > * {
+  margin: 0;
+}
+
+.section-lockup > * + * {
+  margin-top: var(--spacing-xxs);
+}
+
+.section-lockup > .button {
+  margin-top: var(--spacing-s);
 }

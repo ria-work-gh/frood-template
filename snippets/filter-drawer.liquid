@@ -25,7 +25,7 @@
     </div>
     <div class="filter-drawer-footer">
       <button type="submit" form="filter-form" class="button">{{ 'collections.filtering.apply' | t }}</button>
-      <a href="{{ collection.url }}" class="button secondary" data-clear-filters>{{ 'collections.filtering.clear' | t }}</a>
+      <a href="{{ collection.url }}" class="inline-link" data-clear-filters>{{ 'collections.filtering.clear' | t }}</a>
     </div>
   </div>
 </filter-drawer>
@@ -79,7 +79,7 @@
     justify-content: space-between;
     align-items: center;
     padding: var(--spacing-base);
-    border-bottom: 1px solid hsla(0, 0%, 0%, 0.1);
+    border-bottom: 1px solid var(--color-border);
   }
 
   .filter-drawer-title {
@@ -136,27 +136,27 @@
   .filter-pill span {
     display: block;
     padding: var(--spacing-s) var(--spacing-base);
-    border-radius: 2px;
-    background-color: var(--color-white);
-    box-shadow: 1px 2px 8px hsla(0, 0%, 0%, 0.1);
+    border-radius: var(--rad-s);
+    background-color: var(--color-bg);
+    box-shadow: 1px 2px 8px var(--color-border);
     transition: transform 0.2s ease, box-shadow 0.2s ease;
   }
 
   .filter-pill:hover span {
     transform: translateY(-2px);
-    box-shadow: 1px 4px 8px hsla(0, 0%, 0%, 0.1);
+    box-shadow: 1px 4px 8px var(--color-border);
   }
 
   .filter-pill:active span {
     transform: translateY(1px);
-    background-color: hsl(0, 0%, 95%);
-    box-shadow: 1px 1px 5px hsla(0, 0%, 0%, 0.05);
+    background-color: var(--color-bg-dark);
+    box-shadow: 1px 1px 5px var(--color-shadow-soft);
   }
 
   .filter-pill input:checked + span {
-    background-color: black;
-    color: white;
-    box-shadow: 1px 2px 8px hsla(0, 0%, 0%, 0.1);
+    background-color: var(--color-text);
+    color: var(--color-bg);
+    box-shadow: 1px 2px 8px var(--color-border);
   }
 
   .filter-pill input:disabled + span {
@@ -178,7 +178,7 @@
     display: flex;
     gap: var(--spacing-s);
     padding: var(--spacing-base);
-    border-top: 1px solid hsla(0, 0%, 0%, 0.1);
+    border-top: 1px solid var(--color-border);
   }
 
   .filter-drawer-footer .button {

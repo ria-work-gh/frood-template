@@ -6,7 +6,18 @@
 <article class="product-card">
   <div class="product-card-image aspect-{{ settings.product_card_aspect_ratio }}">
     <a href="{{ product.url }}" class="product-card-image-link" tabindex="-1" aria-hidden="true">
-      {%- if product.featured_image -%}
+      {%- comment -%} Look for a 3D model in the product's media — Frood uses GLB pack renders on cards {%- endcomment -%}
+      {%- assign primary_model = nil -%}
+      {%- for media in product.media -%}
+        {%- if media.media_type == 'model' -%}
+          {%- assign primary_model = media -%}
+          {%- break -%}
+        {%- endif -%}
+      {%- endfor -%}
+
+      {%- if primary_model -%}
+        {{ primary_model | model_viewer_tag: class: 'product-card-model', loading: 'lazy' }}
+      {%- elsif product.featured_image -%}
         {{
           product.featured_image
           | image_url: width: 1200
@@ -34,20 +45,7 @@
       {%- endif -%}
     </a>
 
-    {%- comment -%}
-      Badge priority: Sold out > Sale > New. Only one badge renders.
-
-      Merchant-controlled badges (future):
-      Add a product metafield `custom.badge` (single_line_text_field) in
-      Shopify Admin > Settings > Custom data > Products. Merchants type
-      free text like "Limited edition" or "Pre-order". To implement:
-        1. Check `product.metafields.custom.badge` first in the priority
-           chain below (before sold-out, or after — your call).
-        2. Optionally pair with a `custom.badge_color` metafield or a
-           fixed list of values via metafield validation to control style.
-        3. Add a `.product-card-badge.custom` CSS modifier if needed.
-    {%- endcomment -%}
-
+    {%- comment -%} Badge priority: Sold out > Sale. The "new" auto-detect was removed. {%- endcomment -%}
     {%- liquid
       assign badge_text = ''
       assign badge_type = ''
@@ -61,40 +59,10 @@
         assign badge_text = 'products.product.sale' | t
         assign badge_type = 'sale'
       endif
-
-      if badge_text == ''
-        assign now_s = 'now' | date: '%s' | plus: 0
-        assign created_s = product.created_at | date: '%s' | plus: 0
-        assign age_days = now_s | minus: created_s | divided_by: 86400
-        if age_days <= 30
-          assign badge_text = 'products.product.new' | t
-          assign badge_type = 'new'
-        endif
-      endif
     -%}
 
     {%- if badge_text != '' -%}
       <span class="product-card-badge {{ badge_type }}">{{ badge_text }}</span>
-    {%- endif -%}
-
-    {%- if product.available -%}
-      <div class="product-card-quick-add">
-        {%- if product.has_only_default_variant -%}
-          <quick-add>
-            <button
-              type="button"
-              class="button product-card-quick-add-button"
-              data-variant-id="{{ product.selected_or_first_available_variant.id }}"
-            >
-              {{ 'products.product.quick_add' | t }}
-            </button>
-          </quick-add>
-        {%- else -%}
-          <a href="{{ product.url }}" class="button product-card-quick-add-button">
-            {{ 'products.product.choose_options' | t }}
-          </a>
-        {%- endif -%}
-      </div>
     {%- endif -%}
   </div>
 
@@ -106,7 +74,36 @@
   </a>
 </article>
 
-<script type="module" src="{{ 'quick-add.js' | asset_url }}"></script>
+<script src="{{ 'pack-squeeze.js' | asset_url }}" defer></script>
+
+{%- comment -%}
+  Override Shopify's default model-viewer rendering attrs (tone-mapping, exposure, etc.) so
+  the pack renders look like the source GLB (no ACES desaturation, no env-map reflections).
+  The script is guarded so it only runs once per page even though this snippet renders many times.
+{%- endcomment -%}
+<script>
+  if (!window.__froodModelTune) {
+    window.__froodModelTune = true;
+    customElements.whenDefined('model-viewer').then(() => {
+      const tune = (el) => {
+        el.toneMapping = 'neutral';
+        el.exposure = 1;
+        el.shadowIntensity = 1;
+        el.shadowSoftness = 0.5;
+        el.environmentImage = 'neutral';
+        el.interactionPrompt = 'none';
+      };
+      document.querySelectorAll('.product-card-model').forEach(tune);
+      new MutationObserver((records) => {
+        records.forEach((r) => r.addedNodes.forEach((n) => {
+          if (n.nodeType !== 1) return;
+          if (n.classList && n.classList.contains('product-card-model')) tune(n);
+          if (n.querySelectorAll) n.querySelectorAll('.product-card-model').forEach(tune);
+        }));
+      }).observe(document.body, { childList: true, subtree: true });
+    });
+  }
+</script>
 
 {% stylesheet %}
   .product-card-info {
@@ -118,57 +115,42 @@
   .product-card-image {
     position: relative;
     overflow: hidden;
+    background-color: var(--color-bg-dark);
+    border-radius: var(--rad-s);
+  }
+
+  /* 3D model render (GLB) — fills card aspect ratio */
+  .product-card-model,
+  .product-card-image model-viewer {
+    width: 100%;
+    height: 100%;
+    display: block;
+    background-color: transparent;
+    --poster-color: transparent;
+    --progress-bar-color: transparent;
+    --progress-bar-height: 0px;
   }
 
   .product-card-placeholder {
     width: 100%;
     height: 100%;
-    background: #e5e5e5;
+    background: var(--color-border);
   }
 
   .product-card-badge {
     position: absolute;
     top: var(--spacing-s);
     right: var(--spacing-s);
-    background: var(--color-black);
-    color: var(--color-white);
+    background: var(--color-text);
+    color: var(--color-bg);
     font-size: var(--font-size-mini);
     line-height: var(--line-height-mini);
     padding: var(--spacing-xxs) var(--spacing-xs);
   }
 
   .product-card-badge.sale {
-    background: var(--color-green);
-    color: var(--color-black);
+    background: var(--color-accent);
+    color: var(--color-text);
   }
 
-  .product-card-quick-add {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    padding: var(--spacing-s);
-    opacity: 0;
-    transform: translateY(8px);
-    transition: opacity var(--transition-fast), transform var(--transition-fast);
-    pointer-events: none;
-  }
-
-  @media (hover: hover) {
-    .product-card:hover .product-card-quick-add {
-      opacity: 1;
-      transform: translateY(0);
-      pointer-events: auto;
-    }
-  }
-
-  .product-card-quick-add-button {
-    width: 100%;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .product-card-quick-add {
-      transition: none;
-    }
-  }
 {% endstylesheet %}

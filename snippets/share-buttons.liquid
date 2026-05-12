@@ -13,6 +13,6 @@
 <share-buttons hidden>
   <input type="hidden" data-url value="{{ share_url | default: request.origin | append: request.path }}">
   <input type="hidden" data-title value="{{ share_title | default: page_title }}">
-  <button type="button" class="button secondary share-button" data-share>{{ 'share.share' | t }}</button>
+  <button type="button" class="inline-link share-button" data-share>{{ 'share.share' | t }}</button>
   <span class="share-confirmation" data-confirmation hidden>{{ 'share.copied' | t }}</span>
 </share-buttons>

@@ -162,12 +162,12 @@
     {%- comment -%} Actions {%- endcomment -%}
     <div class="gift-card-actions">
       {%- if gift_card.pass_url -%}
-        <a href="{{ gift_card.pass_url }}" class="button secondary">
+        <a href="{{ gift_card.pass_url }}" class="inline-link">
           {{ 'gift_cards.issued.add_to_apple_wallet' | t }}
         </a>
       {%- endif -%}
 
-      <button type="button" class="button secondary" onclick="window.print();">
+      <button type="button" class="inline-link" onclick="window.print();">
         {{ 'gift_cards.issued.print' | t }}
       </button>
 
