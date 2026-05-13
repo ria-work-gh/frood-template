@@ -206,6 +206,7 @@ Each snippet is owned by ONE section/area. When modifying a snippet, read its ow
 | `json-ld-product` | `sections/main-product.liquid` | main-product |
 | `icon-*` | `sections/header.liquid` | header, cart-drawer, mobile-menu |
 | `logo-frood` | `sections/hero.liquid` | Frood wordmark — inline SVG using `fill="currentColor"`; set `color` on the parent to recolor. Source SVG kept at `assets/icon.svg` for reference |
+| `recipe-card` | `sections/main-recipes.liquid` | Recipe index grid. **Placeholder treatment** — image + name + duration only. Full card design (typography, hover, badges) lands later. Reads from `recipes` metaobject. |
 
 ## Design Tokens (Quick Reference)
 
@@ -234,9 +235,11 @@ These were previously derived per color scheme (text color @ 10% / 15% alpha) bu
 **Spacing:** xxxs `4px`, xxs `8px`, xs `12px`, s `16px`, m `24px`, l `64px`, xl `128px`, xxl `192px`
 (`--spacing-base` is an alias of `--spacing-s` — kept for ~99 legacy references.)
 
+**Responsive section padding rule:** Sections that use `padding: var(--spacing-m)` for their outer container must drop down to `var(--spacing-xs)` on mobile + tablet (<900px) and use `m` only on desktop (≥900px). The breakpoint is `@media (min-width: 900px)`. Currently applied: `featured-collection`, `text-image-split`, `feature-card-section`, `feature-card` (inner card), `footer`, `fullbleed`, `media-tabs-overlay`. When adding new sections, follow this pattern.
+
 **Border radius:** `--rad-s: 2px`. Circles use `border-radius: 50%`, hard corners use `0` — don't tokenize those.
 
-**Blur:** `--blur: 10px` — for `backdrop-filter: blur(var(--blur))` (frosted-glass effects).
+**Blur:** `--blur: 7px` — for `backdrop-filter: blur(var(--blur))` (frosted-glass effects).
 
 **Transitions:** `--transition-fast: 0.2s ease`, `--transition-slow: 0.5s ease`
 
@@ -402,7 +405,7 @@ Editorial product grid with stacked heading + CTA.
 
 Two-column section: section-lockup on the left, 50/50 media column on the right with up to 2 media items (image or video each), each with optional captions.
 
-- **Layout:** mobile stacks (text above media); tablet+ becomes a 2-column grid (`1fr 1fr`)
+- **Layout:** mobile + tablet (<900px) stack vertically — media under text, both full width, gap `--spacing-m`. Desktop (≥900px) becomes a 2-column grid (`1fr 1fr`).
 - **Text column:** Uses the `.section-lockup` pattern — same eyebrow (h1) + heading (h3) + primary button as featured-collection. Padded with `--spacing-m` and vertically centered within its column.
 - **Media column:** Edge-to-edge, no padding (extends to viewport edge for a dramatic feel). Holds 1–2 media blocks side-by-side with `--spacing-xs` gap. Each media item supports image OR video (video wins if both set), with an optional caption (text-body) `--spacing-xs` below the media.
 - **Video behavior:** autoplays muted + looped + no controls. Common pattern for ambient hero video.

@@ -47,7 +47,13 @@
   .fullbleed-section.height-75 { height: 75vh; }
 
   .fullbleed-section.has-margins {
-    padding: var(--spacing-m);
+    padding: var(--spacing-xs);
+  }
+
+  @media (min-width: 900px) {
+    .fullbleed-section.has-margins {
+      padding: var(--spacing-m);
+    }
   }
 
   .fullbleed-frame {

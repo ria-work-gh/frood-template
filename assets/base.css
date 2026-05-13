@@ -193,7 +193,7 @@ summary::-webkit-details-marker {
   --rad-s: 2px;
 
   /* Blur */
-  --blur: 10px;
+  --blur: 7px;
 }
 
 @media (min-width: 900px) {
@@ -524,6 +524,39 @@ body {
   color: #16a34a;
   font-size: 14px;
   margin-top: var(--spacing-xs);
+}
+
+/* Newsletter pill — single bg-dark capsule with email input + inline submit. */
+.newsletter-pill {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xxs);
+  background-color: var(--color-bg-dark);
+  padding: var(--spacing-xxs);
+  border-radius: var(--rad-s);
+}
+
+.newsletter-input {
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  border: 0;
+  outline: 0;
+  color: var(--color-text);
+  padding: 0;
+}
+
+.newsletter-input::placeholder {
+  color: var(--color-text-accent);
+  opacity: 1;
+}
+
+.newsletter-submit {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  color: var(--color-text);
+  cursor: pointer;
 }
 
 /* ========== 10. Variant Pills & Checkboxes ========== */

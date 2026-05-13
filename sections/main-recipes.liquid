@@ -1,0 +1,120 @@
+{%- comment -%}
+  Frood Recipes index — section-lockup header above a grid of recipe cards.
+  Loops through every entry of the `recipes` metaobject definition.
+
+  Note: the metaobject type handle is referenced as `shop.metaobjects.recipes`.
+  If the type handle in admin is `recipe` (singular) instead, swap the dot-key.
+  See CLAUDE.md → "Snippet Ownership" — `recipe-card` is owned by this section.
+
+  Mobile: 1 column. Tablet (≥600px): 2 columns. Desktop (≥900px): 3 columns.
+  (Tighter grid than products since recipe cards carry more written content.)
+{%- endcomment -%}
+
+<section class="recipes-index color-{{ section.settings.color_scheme }}">
+  <header class="recipes-index-header section-lockup">
+    {%- if section.settings.eyebrow != blank -%}
+      <h1 class="text-h1">{{ section.settings.eyebrow }}</h1>
+    {%- endif -%}
+
+    {%- if section.settings.heading != blank -%}
+      <h3 class="text-h3">{{ section.settings.heading | newline_to_br }}</h3>
+    {%- endif -%}
+  </header>
+
+  {%- assign recipes = shop.metaobjects.recipes.values -%}
+
+  {%- if recipes.size > 0 -%}
+    <div class="recipes-index-grid">
+      {%- for recipe in recipes -%}
+        {% render 'recipe-card', recipe: recipe %}
+      {%- endfor -%}
+    </div>
+  {%- else -%}
+    <p class="recipes-index-empty text-body">
+      {{ 'recipes.index.empty' | t: default: 'No recipes yet.' }}
+    </p>
+  {%- endif -%}
+</section>
+
+{% stylesheet %}
+  .recipes-index {
+    padding: var(--spacing-xs);
+    color: var(--color-text);
+    background-color: var(--color-bg);
+  }
+
+  @media (min-width: 900px) {
+    .recipes-index {
+      padding: var(--spacing-m);
+    }
+  }
+
+  .recipes-index-header {
+    margin-bottom: var(--spacing-l);
+  }
+
+  .recipes-index-header h3 {
+    max-width: 36ch;
+  }
+
+  /* Mobile: 1 column */
+  .recipes-index-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--spacing-xs);
+  }
+
+  /* Tablet+: 2 columns */
+  @media (min-width: 600px) {
+    .recipes-index-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  /* Desktop+: 3 columns (intentionally tighter than the 4-up product grid —
+     recipe cards carry more body copy and want a bit more horizontal space) */
+  @media (min-width: 900px) {
+    .recipes-index-grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+
+  .recipes-index-empty {
+    padding: var(--spacing-l) 0;
+    color: var(--color-text-accent);
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Recipes index",
+  "tag": "section",
+  "class": "recipes-index-section",
+  "settings": [
+    {
+      "type": "text",
+      "id": "eyebrow",
+      "label": "Eyebrow (h1 — small uppercase label)",
+      "default": "Recipes"
+    },
+    {
+      "type": "textarea",
+      "id": "heading",
+      "label": "Heading (h3)",
+      "info": "Press Enter to add a line break.",
+      "default": "What we cook with our packs."
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-1"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Recipes index"
+    }
+  ]
+}
+{% endschema %}

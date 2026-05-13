@@ -17,7 +17,8 @@
         "newsletter_hbHBmy": {
           "type": "newsletter",
           "settings": {
-            "heading": "Subscribe to our newsletter"
+            "heading": "Newsletter",
+            "body": "Be the first to hear about new ingredients, recipes, and limited drops."
           }
         },
         "link_list_kfceNd": {

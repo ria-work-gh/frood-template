@@ -1,25 +1,23 @@
 {%- form 'customer', id: 'newsletter-form' -%}
   <input type="hidden" name="contact[tags]" value="newsletter">
   {%- if form.posted_successfully? -%}
-    <p class="form-success" role="alert">{{ 'newsletter.success' | t }}</p>
+    <p class="form-success text-body" role="alert">{{ 'newsletter.success' | t }}</p>
   {%- endif -%}
   {%- if form.errors -%}
-    <p class="form-error" role="alert">{{ form.errors.translated_fields.email | default: 'newsletter.error' | t }}</p>
+    <p class="form-error text-body" role="alert">{{ form.errors.translated_fields.email | default: 'newsletter.error' | t }}</p>
   {%- endif -%}
-  <div class="form-inline">
-    <div class="form-group">
-      <label for="newsletter-email" class="visually-hidden">{{ 'newsletter.email_placeholder' | t }}</label>
-      <input
-        type="email"
-        name="contact[email]"
-        id="newsletter-email"
-        class="input"
-        placeholder="{{ 'newsletter.email_placeholder' | t }}"
-        required
-        autocomplete="email"
-        {% if form.posted_successfully? %}disabled{% endif %}
-      >
-    </div>
-    <button type="submit" class="button">{{ 'newsletter.submit' | t }}</button>
+  <div class="newsletter-pill">
+    <label for="newsletter-email" class="visually-hidden">{{ 'newsletter.email_placeholder' | t }}</label>
+    <input
+      type="email"
+      name="contact[email]"
+      id="newsletter-email"
+      class="newsletter-input text-h1"
+      placeholder="{{ 'newsletter.email_placeholder' | t }}"
+      required
+      autocomplete="email"
+      {% if form.posted_successfully? %}disabled{% endif %}
+    >
+    <button type="submit" class="newsletter-submit text-ui">{{ 'newsletter.submit' | t }}</button>
   </div>
 {%- endform -%}

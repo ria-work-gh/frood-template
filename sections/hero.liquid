@@ -43,12 +43,31 @@
     z-index: 1;
     width: 45vw;
     color: var(--color-accent);
+    /* Fades in after the header stagger finishes (~0.6s) */
+    opacity: 0;
+    transform: scale(0.98);
+    animation: hero-logo-in 0.5s ease-out 0.6s forwards;
   }
 
   .hero-frood-logo svg {
     display: block;
     width: 100%;
     height: auto;
+  }
+
+  @keyframes hero-logo-in {
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .hero-frood-logo {
+      opacity: 1;
+      transform: none;
+      animation: none;
+    }
   }
 {% endstylesheet %}
 

@@ -43,9 +43,15 @@
 
 {% stylesheet %}
   .featured-collection {
-    padding: var(--spacing-m);
+    padding: var(--spacing-xs);
     color: var(--color-text);
     background-color: var(--color-bg);
+  }
+
+  @media (min-width: 900px) {
+    .featured-collection {
+      padding: var(--spacing-m);
+    }
   }
 
   /* Lockup alignment + internal gaps come from .section-lockup (see base.css §22).
@@ -58,7 +64,9 @@
     max-width: 36ch;
   }
 
-  /* Mobile: carousel (horizontal scroll-snap) */
+  /* Mobile: carousel (horizontal scroll-snap).
+     Bleeds past the section's right padding so cards extend to the screen edge —
+     gives a clear scroll affordance. First card aligns with the left padding. */
   .featured-collection-products.mobile-carousel {
     display: flex;
     gap: var(--spacing-xs);
@@ -66,6 +74,7 @@
     scroll-snap-type: x mandatory;
     scrollbar-width: none;
     padding-bottom: var(--spacing-xs);
+    margin-right: calc(-1 * var(--spacing-xs));
   }
 
   .featured-collection-products.mobile-carousel::-webkit-scrollbar {
@@ -84,7 +93,8 @@
     gap: var(--spacing-xs);
   }
 
-  /* Tablet+: 2-column grid (overrides both mobile modes) */
+  /* Tablet+: 2-column grid (overrides both mobile modes).
+     Also resets the carousel's right-edge bleed and flex item sizing. */
   @media (min-width: 600px) {
     .featured-collection-products.mobile-carousel,
     .featured-collection-products.mobile-grid {
@@ -93,6 +103,7 @@
       gap: var(--spacing-xs);
       overflow: visible;
       padding-bottom: 0;
+      margin-right: 0;
     }
 
     .featured-collection-products.mobile-carousel > * {

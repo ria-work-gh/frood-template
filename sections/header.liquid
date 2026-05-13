@@ -1,70 +1,35 @@
 <header class="header color-{{ section.settings.color_scheme }}">
-  <div class="header-container">
-    <div class="header-left">
-      <nav class="header-nav" aria-label="{{ 'header.navigation' | t }}">
-        {%- for link in linklists[section.settings.menu].links -%}
-          <a href="{{ link.url }}" class="nav-link">{{ link.title }}</a>
-        {%- endfor -%}
-      </nav>
-      <button
-        class="header-menu-toggle"
-        aria-label="{{ 'header.open_menu' | t }}"
-        aria-controls="mobile-menu"
-        aria-expanded="false"
+  {%- comment -%} Mobile (<600px): "Menu" disclosure button that drops a panel of links below {%- endcomment -%}
+  <details class="header-mobile-menu">
+    <summary class="header-mobile-toggle text-ui">Menu</summary>
+    <nav class="header-mobile-panel" aria-label="{{ 'header.navigation' | t }}">
+      {%- for link in linklists[section.settings.menu].links -%}
+        <a href="{{ link.url }}" class="nav-link text-ui">{{ link.title }}</a>
+      {%- endfor -%}
+    </nav>
+  </details>
+
+  {%- comment -%} Tablet+ (≥600px): bento nav grid {%- endcomment -%}
+  <nav class="header-nav" aria-label="{{ 'header.navigation' | t }}">
+    {%- for link in linklists[section.settings.menu].links -%}
+      <a href="{{ link.url }}" class="nav-link text-ui">{{ link.title }}</a>
+    {%- endfor -%}
+  </nav>
+
+  <div class="header-right">
+    <cart-icon data-aria-template="{{ 'accessibility.cart_count' | t: count: '__COUNT__' }}">
+      <a
+        href="{{ routes.cart_url }}"
+        class="header-cart text-ui"
+        aria-label="{{ 'accessibility.cart_count' | t: count: cart.item_count }}"
       >
-        {% render 'icon-menu' %}
-      </button>
-    </div>
-
-    <a href="/" class="header-logo text-cap">
-      {%- if section.settings.logo -%}
-        {{ section.settings.logo | image_url: width: 200 | image_tag: alt: shop.name }}
-      {%- else -%}
-        {{ shop.name }}
-      {%- endif -%}
-    </a>
-
-    <div class="header-right">
-      <button type="button" class="header-icon" aria-label="{{ 'header.search' | t }}" aria-controls="search-drawer" aria-expanded="false">
-        {% render 'icon-search' %}
-      </button>
-      <cart-icon data-aria-template="{{ 'accessibility.cart_count' | t: count: '__COUNT__' }}">
-        <a
-          href="{{ routes.cart_url }}"
-          class="header-icon"
-          aria-label="{{ 'accessibility.cart_count' | t: count: cart.item_count }}"
-        >
-          {% render 'icon-cart' %}
-          <span class="cart-count">{{ cart.item_count }}</span>
-        </a>
-      </cart-icon>
-    </div>
+        {{ 'header.cart' | t }} (<span class="cart-count">{{ cart.item_count }}</span>)
+      </a>
+    </cart-icon>
   </div>
 </header>
 
-<mobile-menu id="mobile-menu" aria-hidden="true" aria-label="{{ 'header.menu' | t }}">
-  <div class="mobile-menu-overlay" data-overlay></div>
-  <div class="mobile-menu-panel">
-    <div class="mobile-menu-header">
-      <h2 class="mobile-menu-title">{{ shop.name }}</h2>
-      <button class="mobile-menu-close" aria-label="{{ 'header.close_menu' | t }}" data-close>
-        {% render 'icon-close' %}
-      </button>
-    </div>
-    <div class="mobile-menu-body">
-      <nav class="mobile-menu-nav" aria-label="{{ 'header.mobile_navigation' | t }}">
-        {%- for link in linklists[section.settings.menu].links -%}
-          <a href="{{ link.url }}" class="mobile-menu-link">
-            {{ link.title }}
-          </a>
-        {%- endfor -%}
-      </nav>
-    </div>
-  </div>
-</mobile-menu>
-
 <script src="{{ 'cart-icon.js' | asset_url }}" defer></script>
-<script src="{{ 'mobile-menu.js' | asset_url }}" defer></script>
 
 <script>
   (function () {
@@ -85,196 +50,247 @@
 </script>
 
 {% stylesheet %}
-
   :root {
     --header-height: 52px;
   }
 
-  /* Header layout */
   .header {
-    background-color: var(--color-bg);
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 9;
+    background-color: transparent;
     color: var(--color-text);
-    border-bottom: 1px solid var(--color-border);
-  }
-
-  .header-container {
-    display: grid;
-    grid-template-columns: 1fr auto 1fr;
-    align-items: center;
-    padding: var(--spacing-base);
-    gap: var(--spacing-base);
-  }
-
-  /* Left column: nav + hamburger */
-  .header-left {
+    /* top + bottom stay at xxs; only horizontal padding follows the section padding rule */
+    padding: var(--spacing-xxs) var(--spacing-xs);
+    /* Mobile: flex layout so "Menu" disclosure fills space next to cart */
     display: flex;
-    align-items: center;
-    gap: var(--spacing-base);
-    justify-self: start;
+    align-items: flex-start;
+    gap: var(--spacing-xxxs);
   }
 
-  /* Logo (center column) */
-  .header-logo {
-    display: flex;
-    align-items: center;
-    justify-self: center;
-  }
-
-  .header-logo img {
-    height: auto;
-    max-height: 40px;
-    width: auto;
-  }
-
-  /* Desktop navigation */
-  .header-nav {
-    display: none;
-    align-items: center;
-    gap: var(--spacing-base);
-  }
-
-  @media (min-width: 900px) {
-    .header-nav {
-      display: flex;
+  @media (min-width: 600px) {
+    .header {
+      /* Tablet+: revert to block layout so bento can center / cart can position absolutely */
+      display: block;
     }
   }
 
-  /* Right column: search + cart */
-  .header-right {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-base);
-    justify-self: end;
+  @media (min-width: 900px) {
+    .header {
+      padding: var(--spacing-xxs) var(--spacing-m);
+    }
   }
 
-  .header-icon {
-    display: flex;
-    align-items: center;
+  /* Mobile menu disclosure — "Menu" summary + dropdown panel */
+  .header-mobile-menu {
+    flex: 1;
+    min-width: 0;
     position: relative;
   }
 
-  /* Cart count badge */
-  .cart-count {
+  .header-mobile-toggle {
+    display: block;
+    width: 100%;
+    cursor: pointer;
+    list-style: none;
+    /* Same bento card styling as .nav-link */
+    background-color: var(--color-nav);
+    backdrop-filter: blur(var(--blur));
+    -webkit-backdrop-filter: blur(var(--blur));
+    border: 1px solid var(--color-border);
+    border-radius: var(--rad-s);
+    padding: var(--spacing-xxs) var(--spacing-xxs) 7px;
+    text-align: left;
+    color: var(--color-text);
+    transition: background-color var(--transition-fast);
+  }
+
+  .header-mobile-toggle::-webkit-details-marker {
+    display: none;
+  }
+
+  .header-mobile-toggle:hover {
+    background-color: var(--color-accent);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+
+  .header-mobile-menu[open] .header-mobile-toggle {
+    background-color: var(--color-accent);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+
+  /* Dropdown panel — vertical stack below the toggle */
+  .header-mobile-panel {
     position: absolute;
-    top: -4px;
-    right: -6px;
-    min-width: 16px;
-    height: 16px;
+    top: calc(100% + var(--spacing-xxxs));
+    left: 0;
+    right: 0;
     display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 10px;
-    font-weight: 600;
-    background-color: var(--color-text);
-    color: var(--color-bg);
-    border-radius: 50%;
-    padding: 0 4px;
-    line-height: 1;
+    flex-direction: column;
+    gap: var(--spacing-xxxs);
   }
 
-  /* Mobile menu toggle */
-  .header-menu-toggle {
-    display: flex;
-    align-items: center;
+  /* Inside the dropdown, nav-links go full width and ignore the bento grid-column */
+  .header-mobile-panel .nav-link {
+    grid-column: auto;
+    display: block;
+    width: 100%;
   }
 
-  @media (min-width: 900px) {
-    .header-menu-toggle {
+  /* Hide the mobile disclosure at tablet+ */
+  @media (min-width: 600px) {
+    .header-mobile-menu {
       display: none;
     }
   }
 
-  /* Mobile menu */
-  mobile-menu {
-    position: fixed;
-    inset: 0;
-    z-index: 99;
-    pointer-events: none;
+  /* Bento nav — hidden on mobile; 6-col grid on tablet+ */
+  .header-nav {
+    display: none;
   }
 
-  mobile-menu.is-open {
-    pointer-events: auto;
+  @media (min-width: 600px) {
+    .header-nav {
+      max-width: 400px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      column-gap: var(--spacing-xxxs);
+      row-gap: var(--spacing-xxxs);
+    }
   }
 
-  .mobile-menu-overlay {
-    position: absolute;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.5);
-    opacity: 0;
-    transition: opacity var(--transition-slow);
+  /* Tablet (600–899px): left-align the bento so it sits opposite the right-aligned cart */
+  @media (min-width: 600px) and (max-width: 899px) {
+    .header-nav {
+      margin: 0;
+    }
   }
 
-  mobile-menu.is-open .mobile-menu-overlay {
+  .nav-link {
+    /* default: 1/3 width (3 cells per row of 6 columns = span 2) */
+    grid-column: span 2;
+    background-color: var(--color-nav);
+    backdrop-filter: blur(var(--blur));
+    -webkit-backdrop-filter: blur(var(--blur));
+    border: 1px solid var(--color-border);
+    border-radius: var(--rad-s);
+    padding: var(--spacing-xxs) var(--spacing-xxs) 7px;
+    text-align: left;
+    color: var(--color-text);
+    transition: background-color var(--transition-fast);
+  }
+
+  .nav-link:hover {
+    background-color: var(--color-accent);
+    color: var(--color-text);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
     opacity: 1;
   }
 
-  .mobile-menu-panel {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    max-width: 320px;
-    height: 100%;
-    background: var(--color-bg);
+  .nav-link:active {
+    background-color: var(--color-text);
+    color: var(--color-accent);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    opacity: 1;
+  }
+
+  /* First two links span half the grid (3 of 6 columns each) */
+  .nav-link:nth-child(1),
+  .nav-link:nth-child(2) {
+    grid-column: span 3;
+  }
+
+  /* Cart: in the flex flow on mobile (next to menu), absolutely positioned top-right on tablet+ */
+  .header-right {
+    flex-shrink: 0;
+  }
+
+  @media (min-width: 600px) {
+    .header-right {
+      position: absolute;
+      top: var(--spacing-xxs);
+      right: var(--spacing-xs);
+    }
+  }
+
+  @media (min-width: 900px) {
+    .header-right {
+      right: var(--spacing-m);
+    }
+  }
+
+  .header-cart {
+    display: inline-block;
+    background-color: var(--color-nav);
+    backdrop-filter: blur(var(--blur));
+    -webkit-backdrop-filter: blur(var(--blur));
+    border: 1px solid var(--color-border);
+    border-radius: var(--rad-s);
+    padding: var(--spacing-xxs) var(--spacing-xxs) 7px;
     color: var(--color-text);
-    transform: translateX(-100%);
-    transition: transform var(--transition-slow);
-    display: flex;
-    flex-direction: column;
+    transition: background-color var(--transition-fast);
   }
 
-  mobile-menu.is-open .mobile-menu-panel {
-    transform: translateX(0);
+  .header-cart:hover {
+    background-color: var(--color-accent);
+    color: var(--color-text);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    opacity: 1;
   }
 
-  .mobile-menu-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: var(--spacing-base);
-    border-bottom: 1px solid var(--color-border);
+  .header-cart:active {
+    background-color: var(--color-text);
+    color: var(--color-accent);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    opacity: 1;
   }
 
-  .mobile-menu-title {
-    margin: 0;
+  /* Staggered fade-in on page load — left to right, top to bottom (or menu+cart on mobile) */
+  .nav-link,
+  .header-cart,
+  .header-mobile-toggle {
+    opacity: 0;
+    transform: translateY(-6px);
+    animation: header-item-in 0.22s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
   }
 
-  .mobile-menu-close {
-    display: block;
-    background: none;
-    border: none;
-    cursor: pointer;
-    line-height: 0;
-  }
+  .header-mobile-toggle { animation-delay: 0.04s; }
 
-  .mobile-menu-body {
-    flex: 1;
-    overflow-y: auto;
-    padding: var(--spacing-base);
-  }
+  .nav-link:nth-child(1) { animation-delay: 0.04s; }
+  .nav-link:nth-child(2) { animation-delay: 0.08s; }
+  .nav-link:nth-child(3) { animation-delay: 0.12s; }
+  .nav-link:nth-child(4) { animation-delay: 0.16s; }
+  .nav-link:nth-child(5) { animation-delay: 0.20s; }
+  .nav-link:nth-child(6) { animation-delay: 0.24s; }
+  .nav-link:nth-child(7) { animation-delay: 0.28s; }
+  .nav-link:nth-child(8) { animation-delay: 0.32s; }
 
-  .mobile-menu-nav {
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-s);
-  }
+  /* Cart appears after the nav links — fixed delay since it lives outside .header-nav */
+  .header-cart { animation-delay: 0.36s; }
 
-  .mobile-menu-link {
-    display: block;
-    padding: var(--spacing-s) 0;
-    font-size: var(--type-medium-size);
-    line-height: var(--type-medium-height);
-  }
-
-  /* Prevent body scroll when menu open */
-  body.menu-open {
-    overflow: hidden;
+  @keyframes header-item-in {
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .mobile-menu-overlay,
-    .mobile-menu-panel {
-      transition: none;
+    .nav-link,
+    .header-cart,
+    .header-mobile-toggle {
+      opacity: 1;
+      transform: none;
+      animation: none;
     }
   }
 {% endstylesheet %}
