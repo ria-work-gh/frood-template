@@ -47,10 +47,6 @@
     "feature_card": {
       "type": "feature-card",
       "settings": {
-        "show_image": true,
-        "show_title": true,
-        "show_description": false,
-        "show_link": true,
         "heading": "A statement goes here.",
         "card_bg": "bg-dark",
         "card_color": "text"
@@ -59,11 +55,24 @@
     "media_tabs": {
       "type": "media-tabs",
       "blocks": {
-        "tab_1": { "type": "tab", "settings": {} },
-        "tab_2": { "type": "tab", "settings": {} },
-        "tab_3": { "type": "tab", "settings": {} }
+        "tab_1": {
+          "type": "tab",
+          "settings": {}
+        },
+        "tab_2": {
+          "type": "tab",
+          "settings": {}
+        },
+        "tab_3": {
+          "type": "tab",
+          "settings": {}
+        }
       },
-      "block_order": ["tab_1", "tab_2", "tab_3"],
+      "block_order": [
+        "tab_1",
+        "tab_2",
+        "tab_3"
+      ],
       "settings": {
         "color_scheme": "scheme-1"
       }

@@ -207,6 +207,7 @@ Each snippet is owned by ONE section/area. When modifying a snippet, read its ow
 | `icon-*` | `sections/header.liquid` | header, cart-drawer, mobile-menu |
 | `logo-frood` | `sections/hero.liquid` | Frood wordmark — inline SVG using `fill="currentColor"`; set `color` on the parent to recolor. Source SVG kept at `assets/icon.svg` for reference |
 | `recipe-card` | `sections/main-recipes.liquid` | Recipe index grid. **Placeholder treatment** — image + name + duration only. Full card design (typography, hover, badges) lands later. Reads from `recipes` metaobject. |
+| `news-card` | `sections/main-news.liquid` | News index grid. **Placeholder treatment** — image + name only. Full card design (date, excerpt, hover) lands later. Reads from `news` metaobject. |
 
 ## Design Tokens (Quick Reference)
 

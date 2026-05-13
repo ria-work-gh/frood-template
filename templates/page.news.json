@@ -1,0 +1,13 @@
+{
+  "sections": {
+    "main": {
+      "type": "main-news",
+      "settings": {
+        "color_scheme": "scheme-1",
+        "eyebrow": "News",
+        "heading": "What we're up to."
+      }
+    }
+  },
+  "order": ["main"]
+}

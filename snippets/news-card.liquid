@@ -1,0 +1,64 @@
+{%- comment -%}
+  Placeholder News Card — owned by sections/main-news.liquid.
+  Card design is deliberately minimal for now (image + name). Full card
+  treatment (typography, hover, date, excerpt) lands later.
+
+  Expects: news (metaobject)
+  Field handles assumed: `name`, `image`. Adjust if your news metaobject
+  uses different handles (e.g. `title`, `cover_image`).
+{%- endcomment -%}
+
+<article class="news-card">
+  <a href="{{ news.system.url }}" class="news-card-link">
+    <div class="news-card-image">
+      {%- if news.image != blank -%}
+        {{
+          news.image
+          | image_url: width: 1200
+          | image_tag:
+            loading: 'lazy',
+            sizes: '(min-width: 900px) 33vw, (min-width: 600px) 50vw, 100vw',
+            width: news.image.width,
+            height: news.image.height
+        }}
+      {%- else -%}
+        <div class="news-card-placeholder" aria-hidden="true"></div>
+      {%- endif -%}
+    </div>
+
+    <div class="news-card-info">
+      <h3 class="text-h3 news-card-name">{{ news.name }}</h3>
+    </div>
+  </a>
+</article>
+
+{% stylesheet %}
+  .news-card-link {
+    display: grid;
+    gap: var(--spacing-s);
+  }
+
+  .news-card-image {
+    aspect-ratio: 4 / 5;
+    overflow: hidden;
+    background-color: var(--color-bg-dark);
+    border-radius: var(--rad-s);
+  }
+
+  .news-card-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .news-card-placeholder {
+    width: 100%;
+    height: 100%;
+    background: var(--color-border);
+  }
+
+  .news-card-info {
+    display: grid;
+    gap: var(--spacing-xxs);
+  }
+{% endstylesheet %}

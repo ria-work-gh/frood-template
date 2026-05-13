@@ -1,0 +1,116 @@
+{%- comment -%}
+  Frood News index — section-lockup header above a grid of news items.
+  Loops through every entry of the `news` metaobject definition.
+
+  Note: the metaobject type handle is referenced as `shop.metaobjects.news`.
+  If the type handle in admin differs (e.g. `news_post`, `news_item`), swap the dot-key.
+  See CLAUDE.md → "Snippet Ownership" — `news-card` is owned by this section.
+{%- endcomment -%}
+
+<section class="news-index color-{{ section.settings.color_scheme }}">
+  <header class="news-index-header section-lockup">
+    {%- if section.settings.eyebrow != blank -%}
+      <h1 class="text-h1">{{ section.settings.eyebrow }}</h1>
+    {%- endif -%}
+
+    {%- if section.settings.heading != blank -%}
+      <h3 class="text-h3">{{ section.settings.heading | newline_to_br }}</h3>
+    {%- endif -%}
+  </header>
+
+  {%- assign news_items = shop.metaobjects.news.values -%}
+
+  {%- if news_items.size > 0 -%}
+    <div class="news-index-grid">
+      {%- for item in news_items -%}
+        {% render 'news-card', news: item %}
+      {%- endfor -%}
+    </div>
+  {%- else -%}
+    <p class="news-index-empty text-body">
+      {{ 'news.index.empty' | t: default: 'No news yet.' }}
+    </p>
+  {%- endif -%}
+</section>
+
+{% stylesheet %}
+  .news-index {
+    padding: var(--spacing-xs);
+    color: var(--color-text);
+    background-color: var(--color-bg);
+  }
+
+  @media (min-width: 900px) {
+    .news-index {
+      padding: var(--spacing-m);
+    }
+  }
+
+  .news-index-header {
+    margin-bottom: var(--spacing-l);
+  }
+
+  .news-index-header h3 {
+    max-width: 36ch;
+  }
+
+  /* Mobile: 1 column */
+  .news-index-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--spacing-xs);
+  }
+
+  /* Tablet+: 2 columns */
+  @media (min-width: 600px) {
+    .news-index-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  /* Desktop+: 3 columns (matches main-recipes — same content density) */
+  @media (min-width: 900px) {
+    .news-index-grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+
+  .news-index-empty {
+    padding: var(--spacing-l) 0;
+    color: var(--color-text-accent);
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "News index",
+  "tag": "section",
+  "class": "news-index-section",
+  "settings": [
+    {
+      "type": "text",
+      "id": "eyebrow",
+      "label": "Eyebrow (h1 — small uppercase label)",
+      "default": "News"
+    },
+    {
+      "type": "textarea",
+      "id": "heading",
+      "label": "Heading (h3)",
+      "info": "Press Enter to add a line break.",
+      "default": "What we're up to."
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-1"
+    }
+  ],
+  "presets": [
+    {
+      "name": "News index"
+    }
+  ]
+}
+{% endschema %}

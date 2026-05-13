@@ -11,17 +11,15 @@
   "type": "header",
   "name": "Header group",
   "sections": {
-    "announcement-bar": {
-      "type": "announcement-bar",
-      "settings": {}
-    },
     "header": {
       "type": "header",
-      "settings": {}
+      "settings": {
+        "menu": "main-menu",
+        "color_scheme": ""
+      }
     }
   },
   "order": [
-    "announcement-bar",
     "header"
   ]
 }
