@@ -252,7 +252,7 @@ Each style has both a **token group** (in `:root`) and a **utility class** (in `
 
 | Class | Font | Weight | Size | Line height | Letter spacing | When to use |
 |---|---|---|---|---|---|---|
-| `.text-h1` | HW Left | 400 | 12px | 1.1em (110%) | 0.01em (1%) | H1 headings — the top-level heading on a page. **Always uppercase** (`text-transform: uppercase` baked in). Intentionally small — used as a tiny eyebrow/label, not as a visual page title. The `.button` (primary) inherits this style, so all primary button labels are also uppercase |
+| `.text-h1` | HW Left | 400 | 12px | 1.1em (110%) | 0.01em (1%) | H1 headings — the top-level heading on a page. **Always uppercase** AND **always rendered in `--color-text-accent` (warm muted grey)** — both are baked into `.text-h1` in `base.css`. Intentionally small — used as a tiny eyebrow/label, not as a visual page title. The `.button` (primary) inherits the typography props but overrides `color` explicitly (button labels are dark on yellow, not grey), and `.text-transform: uppercase` is inherited too. **Never override the h1 color unless the user explicitly asks for it** — it's a brand rule. |
 | `.text-h2` | HW Left | 500 | 36px | 1.1em (110%) | 0em (0%) | H2 headings — primary visible page heading (often the largest visible text on a section) |
 | `.text-h3` | HW Left | 500 | 24px | 1.1em (110%) | 0em (0%) | H3 headings — sub-section headings within an H2 |
 | `.text-body` | HW Left | 400 | 14px | 1.1em (110%) | 0em (0%) | Paragraph copy, product descriptions, article text — anywhere prose lives |
@@ -262,8 +262,39 @@ Each style has both a **token group** (in `:root`) and a **utility class** (in `
 - Always apply the utility class explicitly — e.g. `<h1 class="text-h1">…</h1>`. Never assume native `h1` inherits these styles.
 - The semantic tag (`h1`, `h2`, etc.) is for *meaning and accessibility*; the class is for *visual style*. They're decoupled — a `<div class="text-h1">` is wrong (use the semantic tag); a `<h2 class="text-h1">` is fine if a visual H1 is needed inside an H2 page-section.
 - Sizes, line-heights, and letter-spacings come from Figma. Line-height and letter-spacing percentages are stored as `em` units in CSS (1.1em = 110%; 0.01em = 1%).
+- **Spacing between an h1 eyebrow and the heading directly below it (h2 or h3) is always `--spacing-xxs` (8px).** This is the canonical pairing — applies anywhere an h1 eyebrow sits above an h2 or h3, whether inside `.section-lockup` (which already defaults to this) or in bespoke compositions like the quote section. Don't use `xs`/`s`/`m` for this gap.
 
 The older abstract scale (`.text-mini`, `.text-base`, `.text-medium`, `.text-large`, `.text-xl`) is still defined in `base.css` for backward compatibility with existing snippets/sections. Prefer Frood semantic classes (`.text-h1`, etc.) for new code.
+
+## Rich Text Fields
+
+**Rule: every wrapper that renders a `richtext` schema setting must auto-underline its inner `<a>` tags so merchant-entered links always read as links.**
+
+This is handled by two container classes in `base.css` — pick whichever fits the context:
+
+| Wrapper class | When to use | Side-effects |
+|---|---|---|
+| `.typeset` | Long-form merchant prose (article bodies, page content, product description, FAQ answers) | Adds top margin between paragraphs and large top margin (2em) before headings — designed for flowing prose |
+| `.text-body` | Short richtext fields (captions, small editable blurbs) | None beyond Frood body typography. No prose margin rules — control paragraph spacing locally if needed |
+
+Both classes already include this rule in `base.css` (§6):
+
+```css
+.typeset a,
+.text-body a,
+.inline-link {
+  text-decoration: underline;
+  text-decoration-color: var(--color-text-light);
+}
+/* hover lifts the underline to --color-text */
+```
+
+**When you add a new `richtext` schema setting:**
+1. Wrap the output in one of those two classes — never render raw richtext into an unclassed `<div>`.
+2. Use `<div>` (or `<figcaption>`, etc.) — never `<p>` — since Shopify's richtext output is itself wrapped in `<p>` and `<p>` can't contain `<p>`.
+3. If multi-paragraph spacing is needed inside `.text-body`, add a local `[class] p + p { margin-top: var(--spacing-xxs) }` rule in the section stylesheet.
+
+**Don't** add link-underline styling per-section — the rule lives once in `base.css` and applies via the wrapper class. If a richtext field's links aren't underlined, the wrapper is missing the right class.
 
 ## Buttons
 
@@ -365,31 +396,42 @@ Editorial product grid with stacked heading + CTA.
 - **Browser support:** `<model-viewer>` works in all modern browsers (Chrome/Safari/Firefox/Edge). Older browsers see the poster image only — graceful fallback
 - **Performance note:** Each card with a 3D model is a WebGL context. Grids with many models can be GPU-heavy. If perf becomes an issue: use intersection observer to defer model loading for off-screen cards, or switch to "poster-only until hover" pattern
 
-### Pack squeeze hover (per-vertex deformation)
+**No hover effects on cards.** Considered grounded shadow + per-vertex squeeze deformation (see conversation history) but reverted — packs render as plain GLBs with the white-cast fix only (tone-mapping neutral, neutral env-image, no shadow). Easy to revisit if/when designed properly.
 
-**File:** `assets/pack-squeeze.js`. Loaded by `snippets/product-card.liquid`.
+### `text-image-split.liquid` (Text + image split)
 
-On hover over a product card, the GLB's mesh vertices deform — pinching inward at the vertical center to mimic a hand squeezing the pack. Reverts on un-hover. Pure JS, no GLB modifications required.
+Two-column section: section-lockup on the left, 50/50 media column on the right with up to 2 media items (image or video each), each with optional captions.
 
-**How it works:**
-1. Reaches into `<model-viewer>`'s internal Three.js scene via Symbol lookup (since model-viewer doesn't expose it publicly)
-2. Caches each mesh's original `position` attribute as a `Float32Array`
-3. On hover, lerps a `squeezeAmount` from 0→1; on un-hover lerps back to 0
-4. Each frame, modifies `position.array` values per vertex using a Gaussian falloff centered on the vertical midpoint (max pinch at center, zero at top/bottom)
-5. Sets `position.needsUpdate = true` so Three.js re-uploads the modified geometry to the GPU
+- **Layout:** mobile stacks (text above media); tablet+ becomes a 2-column grid (`1fr 1fr`)
+- **Text column:** Uses the `.section-lockup` pattern — same eyebrow (h1) + heading (h3) + primary button as featured-collection. Padded with `--spacing-m` and vertically centered within its column.
+- **Media column:** Edge-to-edge, no padding (extends to viewport edge for a dramatic feel). Holds 1–2 media blocks side-by-side with `--spacing-xs` gap. Each media item supports image OR video (video wins if both set), with an optional caption (text-body) `--spacing-xs` below the media.
+- **Video behavior:** autoplays muted + looped + no controls. Common pattern for ambient hero video.
+- **Schema:** 2-block limit on media. Presets include 2 media blocks by default.
 
-**Tunable constants** at the top of `pack-squeeze.js`:
-- `MAX_PINCH` (0.2) — how aggressive the pinch is (0.2 = 20% horizontal compression at center)
-- `FALLOFF` (3) — how localized the pinch is to the center (higher = tighter pinch)
-- `LERP` (0.18) — animation speed per frame
+The previous starter `image-text.liquid` was removed — it referenced the deleted `.button.secondary` class and had a different schema. Don't try to use it.
 
-**Known limitations / fragility:**
-- **Internal API dependency:** uses `Object.getOwnPropertySymbols(modelViewer)` to find the Three.js scene. If model-viewer updates and changes its internal Symbol layout, the script logs a warning to console and degrades gracefully (no squeeze, but cards still render normally).
-- **CPU-bound:** loops every vertex every frame while animating. With many cards visible on lower-end devices, can drop frames. For perf wins later: gate by IntersectionObserver so only visible cards animate.
-- **Procedural, not artistic:** the pinch is a math function, not a designer's crumple. For artistic deformation, the path is morph targets baked into the GLB in Blender (~15 min per pack) + ~25 lines of JS to drive `morphTargetInfluences`. See conversation history for context on why we chose JS deformation instead.
-- **Disabled for `prefers-reduced-motion`:** entire script no-ops if the user has reduced motion preference.
+### `feature-card.liquid` (Feature Card)
 
-**Grounded shadow:** Set via the `tune()` function in `product-card.liquid` (`shadowIntensity: 1`, `shadowSoftness: 0.5`) — uses model-viewer's built-in 3D ground shadow, which projects onto an invisible ground plane and rotates correctly with the model.
+Left-aligned card (max-width **1134px**) that promotes a piece of content from a metaobject + a richtext heading. Sits at the end of the homepage, before the footer.
+
+- **Section padding:** `--spacing-m`
+- **Card:** max-width 1134px, padding `--spacing-m`, border-radius `--rad-s`, **horizontally centered** in the section via `margin-inline: auto`
+- **Two stacked containers inside the card:**
+  1. **Metaobject entry** — title (text-h1) + image + description (text-body) + link (text-ui). Each field is conditionally rendered AND toggleable via section checkboxes.
+  2. **Richtext heading** — displayed with `.text-h2` styling. Semantically a div (not an h2 tag) because richtext outputs `<p>` which is invalid inside h2.
+- **Card colours:** merchant picks `card_bg` AND `card_color` from a `select` setting locked to Frood's 6 brand tokens (off-white, beige, dark burgundy, warm grey, yellow, pale yellow). CSS uses modifier classes like `.card-bg-bg-dark` and `.card-color-text`.
+
+**Wired to the existing `news` metaobject** (defined in Shopify admin, Settings → Custom data → Metaobjects → News). Expected field handles:
+- `date` (date)
+- `location` (single line text)
+- `title` (single line text)
+- `news_image` (file reference, image)
+- `news_description` (rich text)
+- `news_link` (URL)
+
+If field handles differ in the admin (Shopify lowercases + snake_cases field names → handles), update the references in `sections/feature-card.liquid` accordingly.
+
+**Why type-locked:** Shopify's `metaobject` schema picker requires a fixed `metaobject_type` — no way to let the merchant pick the type at section level. To feature a different metaobject type (e.g. recipes, press mentions), either duplicate the section file per type, or change the `metaobject_type` value in this one's schema and update the field references.
 
 ## What NOT to Do
 

@@ -25,10 +25,56 @@
         "mobile_layout": "carousel",
         "color_scheme": "scheme-1"
       }
+    },
+    "quote": {
+      "type": "quote",
+      "settings": {
+        "eyebrow": "Our solution",
+        "heading": "We built a way to cook that fits your life: real ingredients, real flavour, less effort.",
+        "color_scheme": "scheme-1"
+      }
+    },
+    "fullbleed": {
+      "type": "fullbleed",
+      "settings": {
+        "height": "100",
+        "margins": false,
+        "caption_heading": "",
+        "caption_body": "",
+        "color_scheme": "scheme-1"
+      }
+    },
+    "feature_card": {
+      "type": "feature-card",
+      "settings": {
+        "show_image": true,
+        "show_title": true,
+        "show_description": false,
+        "show_link": true,
+        "heading": "A statement goes here.",
+        "card_bg": "bg-dark",
+        "card_color": "text"
+      }
+    },
+    "media_tabs": {
+      "type": "media-tabs",
+      "blocks": {
+        "tab_1": { "type": "tab", "settings": {} },
+        "tab_2": { "type": "tab", "settings": {} },
+        "tab_3": { "type": "tab", "settings": {} }
+      },
+      "block_order": ["tab_1", "tab_2", "tab_3"],
+      "settings": {
+        "color_scheme": "scheme-1"
+      }
     }
   },
   "order": [
     "hero",
-    "featured_collection"
+    "featured_collection",
+    "quote",
+    "fullbleed",
+    "feature_card",
+    "media_tabs"
   ]
 }

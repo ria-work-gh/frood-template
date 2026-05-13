@@ -1,0 +1,65 @@
+{%- comment -%}
+  Frood Quote — centered eyebrow (h1) + statement (h2). Vertical breathing room top/bottom (xxl).
+  Used on the homepage right after featured-collection.
+{%- endcomment -%}
+
+<section class="quote-section color-{{ section.settings.color_scheme }}">
+  {%- if section.settings.eyebrow != blank -%}
+    <h1 class="text-h1">{{ section.settings.eyebrow }}</h1>
+  {%- endif -%}
+
+  {%- if section.settings.heading != blank -%}
+    <h2 class="text-h2">{{ section.settings.heading }}</h2>
+  {%- endif -%}
+</section>
+
+{% stylesheet %}
+  .quote-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: var(--spacing-xxs);
+    padding: var(--spacing-xxl) var(--spacing-m);
+    color: var(--color-text);
+    background-color: var(--color-bg);
+  }
+
+  .quote-section h2 {
+    max-width: 24ch;
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Quote",
+  "tag": "section",
+  "class": "quote-section-wrapper",
+  "settings": [
+    {
+      "type": "text",
+      "id": "eyebrow",
+      "label": "Eyebrow (h1 — small uppercase label)",
+      "default": "Our solution"
+    },
+    {
+      "type": "textarea",
+      "id": "heading",
+      "label": "Heading (h2)",
+      "default": "We built a way to cook that fits your life: real ingredients, real flavour, less effort."
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-1"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Quote"
+    }
+  ]
+}
+{% endschema %}

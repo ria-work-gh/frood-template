@@ -282,6 +282,9 @@ body {
   letter-spacing: var(--type-h1-spacing);
   font-weight: var(--type-h1-weight);
   text-transform: uppercase;
+  /* Brand rule: h1 always uses --color-text-accent. Only override with explicit
+     direction from the user — see CLAUDE.md → "Frood Typography". */
+  color: var(--color-text-accent);
 }
 
 .text-h2 {
@@ -352,16 +355,22 @@ body {
   margin-top: 2em;
 }
 
+/* Any <a> inside a richtext-bearing wrapper (.typeset for long-form prose,
+   .text-body for short captions / merchant richtext fields) is auto-underlined
+   so merchant-entered links in rich text always read as links. */
 .typeset a,
+.text-body a,
 .inline-link {
   text-decoration: underline;
   text-decoration-color: var(--color-text-light);
 }
 .typeset a:hover,
+.text-body a:hover,
 .inline-link:hover {
   text-decoration-color: var(--color-text);
 }
 .typeset a:active,
+.text-body a:active,
 .inline-link:active {
   color: var(--color-text-light);
   text-decoration-color: var(--color-text-light);

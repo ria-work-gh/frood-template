@@ -67,14 +67,21 @@
   </div>
 
   <a href="{{ product.url }}" class="product-card-info">
-    <h3 class="text-cap">{{ product.title }}</h3>
-    <div class="product-card-price">
+    <h3 class="product-card-title text-ui">{{ product.title }} (4 pack)</h3>
+
+    <div class="product-card-meta text-ui">
       {% render 'product-price', product: product %}
+
+      {%- assign current_variant = product.selected_or_first_available_variant -%}
+      {%- if current_variant.weight > 0 -%}
+        <span class="product-card-separator" aria-hidden="true">|</span>
+        <span class="product-card-weight text-h1">
+          {{- current_variant.weight | round -}}{{- current_variant.weight_unit -}}
+        </span>
+      {%- endif -%}
     </div>
   </a>
 </article>
-
-<script src="{{ 'pack-squeeze.js' | asset_url }}" defer></script>
 
 {%- comment -%}
   Override Shopify's default model-viewer rendering attrs (tone-mapping, exposure, etc.) so
@@ -88,10 +95,12 @@
       const tune = (el) => {
         el.toneMapping = 'neutral';
         el.exposure = 1;
-        el.shadowIntensity = 1;
-        el.shadowSoftness = 0.5;
+        el.shadowIntensity = 0;
         el.environmentImage = 'neutral';
         el.interactionPrompt = 'none';
+        /* Clear the Shopify-generated poster so the card bg-dark shows through during load
+           instead of a letterboxed white-strip poster image. */
+        el.poster = '';
       };
       document.querySelectorAll('.product-card-model').forEach(tune);
       new MutationObserver((records) => {
@@ -108,8 +117,27 @@
 {% stylesheet %}
   .product-card-info {
     padding-top: var(--spacing-s);
-    display: grid;
-    gap: var(--spacing-xs);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--spacing-xxxs);
+    text-align: center;
+  }
+
+  .product-card-title {
+    margin: 0;
+  }
+
+  .product-card-meta {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-xxxs);
+  }
+
+  /* In product cards, price uses full body-ui styling (dark) rather than the muted .text-light */
+  .product-card-meta .text-light {
+    color: var(--color-text);
   }
 
   .product-card-image {
