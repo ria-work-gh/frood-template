@@ -5,6 +5,15 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
+  {%- comment -%}
+    Import map for vendored three.js (ESM-only). Must precede the first module
+    script load — keep it high in <head>. Consumed by assets/bundle-stage.js
+    and assets/gltf-loader.js. See sections/bundle-builder.liquid.
+  {%- endcomment -%}
+  <script type="importmap">
+    { "imports": { "three": "{{ 'three.module.js' | asset_url }}" } }
+  </script>
+
   {% render 'meta-tags' %}
   {% render 'json-ld-organization' %}
 

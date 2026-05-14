@@ -34,6 +34,7 @@ templates/       JSON templates + gift_card.liquid
 ### Liquid
 
 **Always strip whitespace:**
+
 ```liquid
 {%- if product.available -%}
   <button>{{ 'products.product.add_to_cart' | t }}</button>
@@ -41,6 +42,7 @@ templates/       JSON templates + gift_card.liquid
 ```
 
 **Inline settings directly** (don't declare variables at top):
+
 ```liquid
 <h2>{{ section.settings.heading }}</h2>
 ```
@@ -48,17 +50,21 @@ templates/       JSON templates + gift_card.liquid
 Variables only for complex filter chains, repeated calculations, or multi-use conditionals.
 
 **Always `render`, never `include`:**
+
 ```liquid
 {% render 'product-card', product: product, lazy_load: true %}
 ```
 
 **All user-facing text via translations:**
+
 ```liquid
 {{ 'products.product.add_to_cart' | t }}
 ```
+
 Keys defined in `locales/en.default.json`.
 
 **Blocks must include `shopify_attributes`:**
+
 ```liquid
 {%- for block in section.blocks -%}
   <div {{ block.shopify_attributes }}>
@@ -68,6 +74,7 @@ Keys defined in `locales/en.default.json`.
 ```
 
 **Use Liquid comments, not HTML:**
+
 ```liquid
 {%- comment -%} This won't render to browser {%- endcomment -%}
 ```
@@ -77,11 +84,18 @@ Keys defined in `locales/en.default.json`.
 Shopify native `color_scheme_group` system. Every section with color support:
 
 Schema:
+
 ```json
-{ "type": "color_scheme", "id": "color_scheme", "label": "Color scheme", "default": "scheme-1" }
+{
+  "type": "color_scheme",
+  "id": "color_scheme",
+  "label": "Color scheme",
+  "default": "scheme-1"
+}
 ```
 
 HTML — always use the `color-` prefix:
+
 ```liquid
 <section class="section-name color-{{ section.settings.color_scheme }}">
 ```
@@ -91,6 +105,7 @@ Three default schemes: scheme-1 (white/black), scheme-2 (black/white), scheme-3 
 ### Section Styles
 
 Co-located in section files using `{% stylesheet %}` (not `<style>`):
+
 ```liquid
 {% stylesheet %}
   .hero-banner {
@@ -114,21 +129,27 @@ Co-located in section files using `{% stylesheet %}` (not `<style>`):
 ### Web Components (JavaScript)
 
 Light DOM only, ES modules, one file per component:
+
 ```js
 class CartDrawer extends HTMLElement {
-  connectedCallback() { this.setupEventListeners(); }
-  disconnectedCallback() { this.cleanup(); }
+  connectedCallback() {
+    this.setupEventListeners();
+  }
+  disconnectedCallback() {
+    this.cleanup();
+  }
 
   open() {
-    this.classList.add('is-open');
-    this.setAttribute('aria-hidden', 'false');
-    this.dispatchEvent(new CustomEvent('drawer:opened', { bubbles: true }));
+    this.classList.add("is-open");
+    this.setAttribute("aria-hidden", "false");
+    this.dispatchEvent(new CustomEvent("drawer:opened", { bubbles: true }));
   }
 }
-customElements.define('cart-drawer', CartDrawer);
+customElements.define("cart-drawer", CartDrawer);
 ```
 
 Loaded per-section:
+
 ```liquid
 <script type="module" src="{{ 'cart-drawer.js' | asset_url }}"></script>
 ```
@@ -153,6 +174,7 @@ cart-items → quantity change or remove → POST /cart/change.js
 ### Images
 
 Always include dimensions to prevent layout shift:
+
 ```liquid
 {{ image | image_url: width: 600 | image_tag:
     loading: 'lazy',
@@ -182,36 +204,37 @@ Always include dimensions to prevent layout shift:
 
 Each snippet is owned by ONE section/area. When modifying a snippet, read its owning code:
 
-| Snippet | Owner | Used By |
-|---------|-------|---------|
-| `product-card` | `sections/main-collection.liquid` | featured-collection, collection, search |
-| `product-price` | `sections/main-product.liquid` | product-card, main-product |
-| `product-variant-selector` | `sections/main-product.liquid` | main-product |
-| `product-buy-buttons` | `sections/main-product.liquid` | main-product |
-| `product-gallery` | `sections/main-product.liquid` | main-product |
-| `product-upsells` | `sections/main-product.liquid` | main-product, cart-drawer |
-| ~~`quick-add`~~ | removed | Product cards no longer have a quick-add button — users click through to the product page to add to cart. `assets/quick-add.js` deleted, related markup/CSS stripped from `product-card.liquid`. |
-| `quantity-selector` | `assets/quantity-selector.js` | main-product, cart-item |
-| `cart-items` | `sections/main-cart.liquid` | main-cart, cart-drawer |
-| `cart-item` | `sections/main-cart.liquid` | cart-items |
-| `cart-totals` | `sections/main-cart.liquid` | main-cart, cart-drawer |
-| `cart-empty` | `sections/main-cart.liquid` | main-cart, cart-drawer |
-| `collection-filters` | `sections/main-collection.liquid` | main-collection |
-| `pagination` | `sections/main-collection.liquid` | collection, blog, search |
-| `article-card` | `sections/main-blog.liquid` | main-blog, search |
-| `share-buttons` | `sections/main-article.liquid` | main-article |
-| `newsletter-form` | `sections/footer.liquid` | footer, main-password |
-| `meta-tags` | `layout/theme.liquid` | theme.liquid |
-| `json-ld-organization` | `layout/theme.liquid` | theme.liquid |
-| `json-ld-product` | `sections/main-product.liquid` | main-product |
-| `icon-*` | `sections/header.liquid` | header, cart-drawer, mobile-menu |
-| `logo-frood` | `sections/hero.liquid` | Frood wordmark — inline SVG using `fill="currentColor"`; set `color` on the parent to recolor. Source SVG kept at `assets/icon.svg` for reference |
-| `recipe-card` | `sections/main-recipes.liquid` | Recipe index grid. **Placeholder treatment** — image + name + duration only. Full card design (typography, hover, badges) lands later. Reads from `recipes` metaobject. |
-| `news-card` | `sections/main-news.liquid` | News index grid. **Placeholder treatment** — image + name only. Full card design (date, excerpt, hover) lands later. Reads from `news` metaobject. |
+| Snippet                    | Owner                             | Used By                                                                                                                                                                                          |
+| -------------------------- | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `product-card`             | `sections/main-collection.liquid` | featured-collection, collection, search                                                                                                                                                          |
+| `product-price`            | `sections/main-product.liquid`    | product-card, main-product                                                                                                                                                                       |
+| `product-variant-selector` | `sections/main-product.liquid`    | main-product                                                                                                                                                                                     |
+| `product-buy-buttons`      | `sections/main-product.liquid`    | main-product                                                                                                                                                                                     |
+| `product-gallery`          | `sections/main-product.liquid`    | main-product                                                                                                                                                                                     |
+| `product-upsells`          | `sections/main-product.liquid`    | main-product, cart-drawer                                                                                                                                                                        |
+| ~~`quick-add`~~            | removed                           | Product cards no longer have a quick-add button — users click through to the product page to add to cart. `assets/quick-add.js` deleted, related markup/CSS stripped from `product-card.liquid`. |
+| `quantity-selector`        | `assets/quantity-selector.js`     | main-product, cart-item                                                                                                                                                                          |
+| `cart-items`               | `sections/main-cart.liquid`       | main-cart, cart-drawer                                                                                                                                                                           |
+| `cart-item`                | `sections/main-cart.liquid`       | cart-items                                                                                                                                                                                       |
+| `cart-totals`              | `sections/main-cart.liquid`       | main-cart, cart-drawer                                                                                                                                                                           |
+| `cart-empty`               | `sections/main-cart.liquid`       | main-cart, cart-drawer                                                                                                                                                                           |
+| `collection-filters`       | `sections/main-collection.liquid` | main-collection                                                                                                                                                                                  |
+| `pagination`               | `sections/main-collection.liquid` | collection, blog, search                                                                                                                                                                         |
+| `article-card`             | `sections/main-blog.liquid`       | main-blog, search                                                                                                                                                                                |
+| `share-buttons`            | `sections/main-article.liquid`    | main-article                                                                                                                                                                                     |
+| `newsletter-form`          | `sections/footer.liquid`          | footer, main-password                                                                                                                                                                            |
+| `meta-tags`                | `layout/theme.liquid`             | theme.liquid                                                                                                                                                                                     |
+| `json-ld-organization`     | `layout/theme.liquid`             | theme.liquid                                                                                                                                                                                     |
+| `json-ld-product`          | `sections/main-product.liquid`    | main-product                                                                                                                                                                                     |
+| `icon-*`                   | `sections/header.liquid`          | header, cart-drawer, mobile-menu                                                                                                                                                                 |
+| `logo-frood`               | `sections/hero.liquid`            | Frood wordmark — inline SVG using `fill="currentColor"`; set `color` on the parent to recolor. Source SVG kept at `assets/icon.svg` for reference                                                |
+| `recipe-card`              | `sections/main-recipes.liquid`    | Recipe index grid. **Placeholder treatment** — image + name + duration only. Full card design (typography, hover, badges) lands later. Reads from `recipes` metaobject.                          |
+| `news-card`                | `sections/main-news.liquid`       | News index grid. **Placeholder treatment** — image + name only. Full card design (date, excerpt, hover) lands later. Reads from `news` metaobject.                                               |
 
 ## Design Tokens (Quick Reference)
 
 **Frood palette:**
+
 - `--color-text` `#36262B` (warm dark burgundy)
 - `--color-text-accent` `#979193` (muted warm grey)
 - `--color-bg` `#FFFEF9` (warm off-white)
@@ -222,12 +245,14 @@ Each snippet is owned by ONE section/area. When modifying a snippet, read its ow
 **Semantic alias:** `--color-text-light` → `--color-text-accent` (kept so existing references keep working).
 
 **Form input backgrounds** (brand-locked, same across all color schemes):
+
 - `--color-input-bg` → `--color-bg-dark` (warm beige) — default state
 - `--color-input-bg-hover` → `--color-accent-light` (pale yellow) — hover/focus state
 
 These were previously derived per color scheme (text color @ 10% / 15% alpha) but are now brand-locked. Used by `.input`, `.checkbox`, `.textarea`, `.select`.
 
 **Translucent overlays** (derived from `--color-text` via `color-mix`, so they adapt to color schemes):
+
 - `--color-border` text @ 10% — borders, hairlines
 - `--color-shadow-soft` text @ 5% — pressed-state shadows
 - `--color-nav` `--color-bg-dark` @ 80% — nav backdrops
@@ -254,17 +279,18 @@ Authoritative values live in `assets/base.css` `:root` block.
 
 Each style has both a **token group** (in `:root`) and a **utility class** (in `base.css` section 5). Apply the utility class directly in markup — the existing reset strips default `h1`/`h2` browser styles, so semantic tags don't auto-receive these.
 
-| Class | Font | Weight | Size | Line height | Letter spacing | When to use |
-|---|---|---|---|---|---|---|
-| `.text-h1` | HW Left | 400 | 12px | 1.1em (110%) | 0.01em (1%) | H1 headings — the top-level heading on a page. **Always uppercase** AND **always rendered in `--color-text-accent` (warm muted grey)** — both are baked into `.text-h1` in `base.css`. Intentionally small — used as a tiny eyebrow/label, not as a visual page title. The `.button` (primary) inherits the typography props but overrides `color` explicitly (button labels are dark on yellow, not grey), and `.text-transform: uppercase` is inherited too. **Never override the h1 color unless the user explicitly asks for it** — it's a brand rule. |
-| `.text-h2` | HW Left | 500 | 36px | 1.1em (110%) | 0em (0%) | H2 headings — primary visible page heading (often the largest visible text on a section) |
-| `.text-h3` | HW Left | 500 | 24px | 1.1em (110%) | 0em (0%) | H3 headings — sub-section headings within an H2 |
-| `.text-body` | HW Left | 400 | 14px | 1.1em (110%) | 0em (0%) | Paragraph copy, product descriptions, article text — anywhere prose lives |
-| `.text-ui` | HW Left | 500 | 14px | 1.2em (120%) | 0em (0%) | Interactive UI text — buttons, nav links, form labels, input placeholders, badges. Same size as body but medium weight + slightly more line-height for legibility in small interactive targets |
+| Class        | Font    | Weight | Size | Line height  | Letter spacing | When to use                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| ------------ | ------- | ------ | ---- | ------------ | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `.text-h1`   | HW Left | 400    | 12px | 1.1em (110%) | 0.01em (1%)    | H1 headings — the top-level heading on a page. **Always uppercase** AND **always rendered in `--color-text-accent` (warm muted grey)** — both are baked into `.text-h1` in `base.css`. Intentionally small — used as a tiny eyebrow/label, not as a visual page title. The `.button` (primary) inherits the typography props but overrides `color` explicitly (button labels are dark on yellow, not grey), and `.text-transform: uppercase` is inherited too. **Never override the h1 color unless the user explicitly asks for it** — it's a brand rule. |
+| `.text-h2`   | HW Left | 500    | 36px | 1.1em (110%) | 0em (0%)       | H2 headings — primary visible page heading (often the largest visible text on a section)                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| `.text-h3`   | HW Left | 500    | 24px | 1.1em (110%) | 0em (0%)       | H3 headings — sub-section headings within an H2                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `.text-body` | HW Left | 400    | 14px | 1.1em (110%) | 0em (0%)       | Paragraph copy, product descriptions, article text — anywhere prose lives                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| `.text-ui`   | HW Left | 500    | 14px | 1.2em (120%) | 0em (0%)       | Interactive UI text — buttons, nav links, form labels, input placeholders, badges. Same size as body but medium weight + slightly more line-height for legibility in small interactive targets                                                                                                                                                                                                                                                                                                                                                             |
 
 **Rules:**
+
 - Always apply the utility class explicitly — e.g. `<h1 class="text-h1">…</h1>`. Never assume native `h1` inherits these styles.
-- The semantic tag (`h1`, `h2`, etc.) is for *meaning and accessibility*; the class is for *visual style*. They're decoupled — a `<div class="text-h1">` is wrong (use the semantic tag); a `<h2 class="text-h1">` is fine if a visual H1 is needed inside an H2 page-section.
+- The semantic tag (`h1`, `h2`, etc.) is for _meaning and accessibility_; the class is for _visual style_. They're decoupled — a `<div class="text-h1">` is wrong (use the semantic tag); a `<h2 class="text-h1">` is fine if a visual H1 is needed inside an H2 page-section.
 - Sizes, line-heights, and letter-spacings come from Figma. Line-height and letter-spacing percentages are stored as `em` units in CSS (1.1em = 110%; 0.01em = 1%).
 - **Spacing between an h1 eyebrow and the heading directly below it (h2 or h3) is always `--spacing-xxs` (8px).** This is the canonical pairing — applies anywhere an h1 eyebrow sits above an h2 or h3, whether inside `.section-lockup` (which already defaults to this) or in bespoke compositions like the quote section. Don't use `xs`/`s`/`m` for this gap.
 
@@ -276,10 +302,10 @@ The older abstract scale (`.text-mini`, `.text-base`, `.text-medium`, `.text-lar
 
 This is handled by two container classes in `base.css` — pick whichever fits the context:
 
-| Wrapper class | When to use | Side-effects |
-|---|---|---|
-| `.typeset` | Long-form merchant prose (article bodies, page content, product description, FAQ answers) | Adds top margin between paragraphs and large top margin (2em) before headings — designed for flowing prose |
-| `.text-body` | Short richtext fields (captions, small editable blurbs) | None beyond Frood body typography. No prose margin rules — control paragraph spacing locally if needed |
+| Wrapper class | When to use                                                                               | Side-effects                                                                                               |
+| ------------- | ----------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `.typeset`    | Long-form merchant prose (article bodies, page content, product description, FAQ answers) | Adds top margin between paragraphs and large top margin (2em) before headings — designed for flowing prose |
+| `.text-body`  | Short richtext fields (captions, small editable blurbs)                                   | None beyond Frood body typography. No prose margin rules — control paragraph spacing locally if needed     |
 
 Both classes already include this rule in `base.css` (§6):
 
@@ -294,6 +320,7 @@ Both classes already include this rule in `base.css` (§6):
 ```
 
 **When you add a new `richtext` schema setting:**
+
 1. Wrap the output in one of those two classes — never render raw richtext into an unclassed `<div>`.
 2. Use `<div>` (or `<figcaption>`, etc.) — never `<p>` — since Shopify's richtext output is itself wrapped in `<p>` and `<p>` can't contain `<p>`.
 3. If multi-paragraph spacing is needed inside `.text-body`, add a local `[class] p + p { margin-top: var(--spacing-xxs) }` rule in the section stylesheet.
@@ -305,6 +332,7 @@ Both classes already include this rule in `base.css` (§6):
 **Frood has exactly one button: `.button`.** There is no `.button.secondary`, no ghost button, no tertiary. Low-emphasis actions become **underlined inline links** (`.inline-link`) instead — visually quiet, semantically still clickable.
 
 **`.button` (primary):**
+
 - Background: `--color-accent` (yellow)
 - Text: `--color-text` (dark burgundy)
 - Typography: based on `.text-h1` (HW Left, 12px / 1.1em / 0.01em / uppercase) — but **font-weight is overridden to 500 (Medium)**. So button labels are heavier than a plain h1 in body copy.
@@ -315,19 +343,23 @@ Both classes already include this rule in `base.css` (§6):
 - No box-shadow, no transform-bounce, no active state — clean color-invert is the only interaction
 
 **Usage:**
+
 ```html
 <button class="button">Add to cart</button>
 <a href="/checkout" class="button">Checkout</a>
 ```
 
 **For low-emphasis actions, use `.inline-link` instead:**
+
 ```html
 <a href="/cart" class="inline-link">View cart</a>
 <button class="inline-link">Update</button>
 ```
+
 `.inline-link` is just underlined text — the underline color animates from `--color-text-light` to `--color-text` on hover. Works on both `<a>` and `<button>` (the base CSS reset strips default button styles).
 
 **What NOT to do:**
+
 - Don't add a "secondary button" variant — if a designer asks for one, push back or use `.inline-link`.
 - Don't override `.button` colors per-section — the brand button is locked to yellow/dark to keep the system tight.
 - Don't add new sizes (`.button-large`, `.button-small`) without explicit design direction. One size only.
@@ -348,16 +380,19 @@ Both classes already include this rule in `base.css` (§6):
 **Defined in:** `assets/base.css` §22.
 
 **Rules baked in:**
+
 - `flex-direction: column`, `align-items: flex-start`, `text-align: left` — text always sits on the left
 - Default vertical gap between children: `--spacing-xxs` (8px) — applies between heading elements
 - Gap before a `.button` child: `--spacing-s` (16px) — buttons get more breathing room
 - All children have `margin: 0` reset, so default heading/paragraph margins don't fight the lockup
 
 **When NOT to use:**
+
 - If a section needs centered text → don't use lockup (or override `align-items: center; text-align: center;` in the section's local CSS, but this defeats the lockup's purpose)
 - If a section's heading composition is one-off (e.g. heading + price + button + image) → write a bespoke layout
 
 **Where it's used:**
+
 - `sections/featured-collection.liquid` — section header
 
 (Add new locations here as more sections adopt it.)
@@ -426,6 +461,7 @@ Left-aligned card (max-width **1134px**) that promotes a piece of content from a
 - **Card colours:** merchant picks `card_bg` AND `card_color` from a `select` setting locked to Frood's 6 brand tokens (off-white, beige, dark burgundy, warm grey, yellow, pale yellow). CSS uses modifier classes like `.card-bg-bg-dark` and `.card-color-text`.
 
 **Wired to the existing `news` metaobject** (defined in Shopify admin, Settings → Custom data → Metaobjects → News). Expected field handles:
+
 - `date` (date)
 - `location` (single line text)
 - `title` (single line text)
@@ -436,6 +472,53 @@ Left-aligned card (max-width **1134px**) that promotes a piece of content from a
 If field handles differ in the admin (Shopify lowercases + snake_cases field names → handles), update the references in `sections/feature-card.liquid` accordingly.
 
 **Why type-locked:** Shopify's `metaobject` schema picker requires a fixed `metaobject_type` — no way to let the merchant pick the type at section level. To feature a different metaobject type (e.g. recipes, press mentions), either duplicate the section file per type, or change the `metaobject_type` value in this one's schema and update the field references.
+
+## Bundle Builder Section
+
+`sections/bundle-builder.liquid` — an interactive "build your box" section ported from a Svelte demo
+(v2, pouch-first). The atomic unit is a single POUCH, not a 4-pack box. A WebGL stage renders a grid
+of boxes, each holding up to 4 pouches in named slot anchors (`Slot0`–`Slot3` in `box.glb`); product
+cards add/remove pouches; a progress bar tracks box-based discount tiers; a cart summary shows
+projected totals.
+
+**State is an ordered list:** `<bundle-builder>` holds `pouches: [variantId, …]` — one entry per
+pouch, order-sensitive. Pouch index i fills box `floor(i / 4)`, slot `i % 4`; removing a pouch
+shifts later pouches up a slot. Per-flavour counts are derived for the cart lines + steppers.
+
+**Files:**
+
+- `sections/bundle-builder.liquid` — markup, co-located stylesheet, schema (collection + box-based
+  quantity settings + `tier` blocks)
+- `assets/bundle-builder.js` — `<bundle-builder>` web component: owns the ordered pouch list,
+  localStorage persistence (`frood.bundle.v2.<sectionId>`), derived totals/tier/discount/boxCount,
+  DOM hydration, checkout. Header comment documents the full expected-markup contract.
+- `assets/bundle-stage.js` — `<bundle-stage>` web component: the three.js scene
+- `assets/three.module.js` + `three.core.js` + `gltf-loader.js` (+ `buffer-geometry-utils.js`,
+  `skeleton-utils.js`) — vendored three.js r184
+- `assets/box.glb` (box mesh + 4 slot anchors) + `assets/pouch.glb` (one pouch mesh) + `box.webp` —
+  vendored models + shared box texture
+
+**Two-component split:** `<bundle-builder>` (state) and `<bundle-stage>` (3D) are standalone per
+theme convention — they communicate only via the `bundle:updated` event on `document`, detail
+`{ pouches: [variantId, …] }` (the ordered pouch list). `<bundle-stage>` derives its own box/slot
+grid from the order. Both also independently read the `.bundle-products` JSON blob in the section
+markup.
+
+**Import map (new theme pattern):** three.js is ESM-only, so `layout/theme.liquid` has a `<scripttype="importmap">` in `<head>` mapping the bare `three` specifier to the vendored `three.module.js`.
+This is the **only** import map in the theme — it must stay high in `<head>` (before any module
+script loads) and there can only be one. Unlike Embla (vendored as a UMD global), three.js is
+consumed as real ES modules. `gltf-loader.js` had its two `three/addons/...` util imports patched to
+relative `./` paths.
+
+**Pouch textures come from a metafield:** each product needs a `custom.pouch_texture` metafield (File
+reference to an image) for its 3D pouch. Products without one fall back to a flat colour — no error.
+
+**Discount tiers are box-based blocks:** each `tier` block sets a minimum in BOXES (1–4) and a %.
+The section converts box minimums to pouch thresholds (`× 4`) before handing them to the JS. Display
+-only — the tier % shown is a projection; the real discount must be a Shopify automatic discount
+configured in admin, kept in sync with the tier blocks. Checkout collapses the ordered pouch list to
+per-variant quantities and POSTs them to `/cart/add.js` in one request (shared `_bundle` line-item
+property), then redirects to `/checkout`.
 
 ## What NOT to Do
 
@@ -450,6 +533,7 @@ If field handles differ in the admin (Shopify lowercases + snake_cases field nam
 - No `@font-face` in base.css — font faces go in theme.liquid via Liquid `asset_url`
 - No hardcoded user-facing strings — always `{{ 'key' | t }}`
 - No bare `{{ section.settings.color_scheme }}` — always prefix with `color-`
+- No second JS import map — `theme.liquid` has the only one (vendored three.js); a document can have just one
 
 ## Accessibility Checklist
 
@@ -465,9 +549,9 @@ If field handles differ in the admin (Shopify lowercases + snake_cases field nam
 
 ## For Deeper Context
 
-| Topic | Read | Contains |
-|-------|------|----------|
-| CSS patterns, JS components, Liquid conventions, animation, layout, i18n | `conventions/architecture.md` | Class naming, breakpoints, color schemes, Web Component pattern, event naming, fetch patterns, Section Rendering API, inline settings, whitespace control, Motion library, theme.liquid structure |
-| Cart behavior, add-to-cart, event protocol | `conventions/commerce.md` | Cart event flow, bundled section rendering, quantity selector, error handling, loading states, no-JS fallback |
-| WCAG, keyboard, ARIA, focus management | `conventions/accessibility.md` | Focus trapping pattern, ARIA attributes, heading hierarchy, form accessibility, color contrast, reduced motion, testing checklist |
-| Why we chose X over Y | `conventions/decisions.md` | Rationale for light DOM, no BEM, vanilla CSS, Embla, no Shadow DOM, no build tools, etc. |
+| Topic                                                                    | Read                           | Contains                                                                                                                                                                                          |
+| ------------------------------------------------------------------------ | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| CSS patterns, JS components, Liquid conventions, animation, layout, i18n | `conventions/architecture.md`  | Class naming, breakpoints, color schemes, Web Component pattern, event naming, fetch patterns, Section Rendering API, inline settings, whitespace control, Motion library, theme.liquid structure |
+| Cart behavior, add-to-cart, event protocol                               | `conventions/commerce.md`      | Cart event flow, bundled section rendering, quantity selector, error handling, loading states, no-JS fallback                                                                                     |
+| WCAG, keyboard, ARIA, focus management                                   | `conventions/accessibility.md` | Focus trapping pattern, ARIA attributes, heading hierarchy, form accessibility, color contrast, reduced motion, testing checklist                                                                 |
+| Why we chose X over Y                                                    | `conventions/decisions.md`     | Rationale for light DOM, no BEM, vanilla CSS, Embla, no Shadow DOM, no build tools, etc.                                                                                                          |

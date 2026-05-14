@@ -67,7 +67,7 @@
   </div>
 
   <a href="{{ product.url }}" class="product-card-info">
-    <h3 class="product-card-title text-ui">{{ product.title }} (4 pack)</h3>
+    <h3 class="product-card-title text-ui">{{ product.title }}</h3>
 
     <div class="product-card-meta text-ui">
       {% render 'product-price', product: product %}
@@ -75,7 +75,7 @@
       {%- assign current_variant = product.selected_or_first_available_variant -%}
       {%- if current_variant.weight > 0 -%}
         <span class="product-card-separator" aria-hidden="true">|</span>
-        <span class="product-card-weight text-h1">
+        <span class="product-card-weight">
           {{- current_variant.weight | round -}}{{- current_variant.weight_unit -}}
         </span>
       {%- endif -%}

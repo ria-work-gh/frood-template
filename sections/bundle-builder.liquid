@@ -1,0 +1,607 @@
+{%- comment -%}
+  Bundle Builder — interactive "build your box" section ported from the Svelte demo (v2).
+
+  V2 model — pouch-first. The atomic unit is a single POUCH, not a 4-pack box. A
+  WebGL stage (<bundle-stage>) renders a grid of boxes, each holding up to 4
+  pouches in named slot anchors; product cards add/remove pouches; a progress bar
+  tracks box-based discount tiers; a cart summary shows projected totals. State
+  lives in <bundle-builder> (assets/bundle-builder.js) — an ordered list of
+  pouches — and is persisted to localStorage.
+
+  The merchant's collection should contain SINGLE-POUCH products (each variant a
+  single priced pouch), not 4-packs — the builder sells pouches individually.
+
+  Discount tiers are box-based and DISPLAY-ONLY: each tier block sets a minimum
+  in BOXES and a %; the section converts box minimums to pouch thresholds for
+  the JS. Configure a matching Shopify automatic discount in admin and keep it
+  in sync with the tier blocks below.
+
+  Pouch textures come from a per-product metafield: custom.pouch_texture, a File
+  reference to an image. Products without one fall back to a flat colour.
+
+  Requires the import map in layout/theme.liquid (resolves the `three` specifier).
+{%- endcomment -%}
+
+{%- assign slots_per_box = 4 -%}
+{%- assign target_qty = section.settings.target_boxes | times: slots_per_box -%}
+{%- assign max_qty = section.settings.max_boxes | times: slots_per_box -%}
+
+<bundle-builder
+  class="bundle-builder color-{{ section.settings.color_scheme }}"
+  data-section-id="{{ section.id }}"
+  data-currency="{{ shop.currency }}"
+  data-slots-per-box="{{ slots_per_box }}"
+  data-target-qty="{{ target_qty }}"
+  data-max-qty="{{ max_qty }}"
+  data-tiers='[{%- for block in section.blocks -%}{%- if block.type == "tier" -%}{"min":{{ block.settings.min_boxes | times: slots_per_box }},"pct":{{ block.settings.pct | divided_by: 100.0 }}}{%- unless forloop.last -%},{%- endunless -%}{%- endif -%}{%- endfor -%}]'
+  data-i18n-progress-headline="{{ 'sections.bundle_builder.progress_headline' | t }}"
+  data-i18n-progress-headline-max="{{ 'sections.bundle_builder.progress_headline_max' | t }}"
+  data-i18n-progress-detail="{{ 'sections.bundle_builder.progress_detail' | t }}"
+  data-i18n-progress-detail-max="{{ 'sections.bundle_builder.progress_detail_max' | t }}"
+  data-i18n-pouch="{{ 'sections.bundle_builder.pouch' | t }}"
+  data-i18n-pouches="{{ 'sections.bundle_builder.pouches' | t }}"
+  data-i18n-box="{{ 'sections.bundle_builder.box' | t }}"
+  data-i18n-boxes="{{ 'sections.bundle_builder.boxes' | t }}"
+  data-i18n-slots-per-box="{{ 'sections.bundle_builder.slots_per_box' | t }}"
+  data-i18n-remove="{{ 'sections.bundle_builder.remove_item' | t }}"
+  data-i18n-error="{{ 'sections.bundle_builder.checkout_error' | t }}"
+>
+  <script type="application/json" class="bundle-products">
+    [
+      {%- for product in section.settings.collection.products -%}
+        {%- assign variant = product.selected_or_first_available_variant -%}
+        {%- assign pouch_texture = product.metafields.custom.pouch_texture -%}
+        {
+          "id": {{ variant.id | json }},
+          "handle": {{ product.handle | json }},
+          "title": {{ product.title | json }},
+          "size": {{ product.metafields.custom.pack_size | default: variant.title | json }},
+          "price": {{ variant.price | json }},
+          "textureUrl": {% if pouch_texture != blank %}{{ pouch_texture.value | image_url: width: 2048 | json }}{% else %}""{% endif %}
+        }{%- unless forloop.last -%},{%- endunless -%}
+      {%- endfor -%}
+    ]
+  </script>
+
+  {%- comment -%} 3D stage — background layer on desktop, top block on mobile {%- endcomment -%}
+  <div class="bundle-stage-bg">
+    <bundle-stage
+      class="bundle-stage"
+      data-model="{{ 'box.glb' | asset_url }}"
+      data-pouch-model="{{ 'pouch.glb' | asset_url }}"
+      data-box-texture="{{ 'box.webp' | asset_url }}"
+      data-slots-per-box="{{ slots_per_box }}"
+    >
+      <p class="bundle-stage-empty" data-bundle-empty>
+        {{ 'sections.bundle_builder.empty_stage' | t }}
+      </p>
+    </bundle-stage>
+  </div>
+
+  <div class="bundle-layout">
+    <aside class="bundle-left">
+      <div class="bundle-product-list" data-product-list>
+        {%- for product in section.settings.collection.products -%}
+          {%- assign variant = product.selected_or_first_available_variant -%}
+          {%- assign pouch_size = product.metafields.custom.pack_size | default: variant.title -%}
+          <article class="bundle-card" data-product-card data-variant-id="{{ variant.id }}">
+            <header class="bundle-card-header">
+              <div class="bundle-card-title">
+                <h3 class="text-ui">{{ product.title }}</h3>
+                {%- if pouch_size != blank -%}
+                  <p class="bundle-card-size">{{ pouch_size }}</p>
+                {%- endif -%}
+              </div>
+            </header>
+            <div class="bundle-stepper">
+              <button
+                type="button"
+                data-action="remove"
+                data-variant-id="{{ variant.id }}"
+                aria-label="{{ 'sections.bundle_builder.decrease' | t: name: product.title }}"
+                disabled
+              >
+                &minus;
+              </button>
+              <span class="bundle-qty" data-qty>0</span>
+              <button
+                type="button"
+                data-action="add"
+                data-variant-id="{{ variant.id }}"
+                aria-label="{{ 'sections.bundle_builder.increase' | t: name: product.title }}"
+              >
+                +
+              </button>
+            </div>
+          </article>
+        {%- else -%}
+          <p class="bundle-card-size">{{ 'collections.general.no_products' | t }}</p>
+        {%- endfor -%}
+      </div>
+    </aside>
+
+    <div class="bundle-center" aria-hidden="true"></div>
+
+    <aside class="bundle-right">
+      <section class="bundle-progress" data-progress>
+        <div class="bundle-progress-row">
+          <p class="bundle-progress-headline text-ui" data-progress-headline></p>
+          <p class="bundle-progress-count" data-progress-count></p>
+        </div>
+        <p class="bundle-progress-detail" data-progress-detail></p>
+        <div
+          class="bundle-progress-bar"
+          role="progressbar"
+          data-progress-bar
+          aria-valuemin="0"
+        >
+          <div class="bundle-progress-fill" data-progress-fill></div>
+        </div>
+        <p class="bundle-progress-boxes" data-progress-boxes></p>
+      </section>
+
+      <section class="bundle-cart" data-cart>
+        <h2 class="text-ui">{{ 'sections.bundle_builder.your_box' | t }}</h2>
+        <p class="bundle-cart-empty" data-cart-empty>
+          {{ 'sections.bundle_builder.empty_cart' | t }}
+        </p>
+        <ul class="bundle-cart-lines unstyled-list" data-cart-lines hidden></ul>
+        <div class="bundle-cart-totals" data-cart-totals hidden>
+          <div class="bundle-cart-totals-line">
+            <span>{{ 'sections.bundle_builder.subtotal' | t }}</span>
+            <span data-subtotal></span>
+          </div>
+          <div class="bundle-cart-totals-line bundle-cart-price-line">
+            <span>{{ 'sections.bundle_builder.price' | t }}</span>
+            <span data-price></span>
+          </div>
+        </div>
+        <button type="button" class="button bundle-checkout" data-checkout hidden>
+          {{ 'sections.bundle_builder.checkout' | t }}
+        </button>
+        <div class="form-error" data-error role="alert" hidden></div>
+      </section>
+    </aside>
+  </div>
+</bundle-builder>
+
+{% stylesheet %}
+  .bundle-builder {
+    display: block;
+    position: relative;
+    padding: var(--spacing-xxs);
+    background-color: var(--color-bg-dark);
+    color: var(--color-text);
+  }
+
+  /* 3D stage — mobile: in-flow block above the controls */
+  .bundle-stage-bg {
+    position: relative;
+    width: 100%;
+    height: 50vh;
+    margin-bottom: var(--spacing-xxs);
+    pointer-events: none;
+  }
+
+  .bundle-stage {
+    display: block;
+    position: relative;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  .bundle-stage canvas {
+    display: block;
+    width: 100% !important;
+    height: 100% !important;
+  }
+
+  .bundle-stage-empty {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    margin: 0;
+    font-size: var(--type-mini-size);
+    color: var(--color-text-accent);
+  }
+
+  .bundle-layout {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xxs);
+  }
+
+  .bundle-left,
+  .bundle-right {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xxs);
+  }
+
+  .bundle-center {
+    display: none;
+  }
+
+  .bundle-product-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xxxs);
+  }
+
+  /* Desktop: stage becomes an absolute background, controls float over it */
+  @media (min-width: 900px) {
+    .bundle-builder {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    .bundle-stage-bg {
+      position: absolute;
+      inset: 0;
+      height: auto;
+      margin-bottom: 0;
+      z-index: 0;
+    }
+
+    .bundle-layout {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 300px 1fr 300px;
+      gap: var(--spacing-xxs);
+      min-height: 0;
+    }
+
+    .bundle-center {
+      display: block;
+      pointer-events: none;
+    }
+
+    .bundle-right {
+      justify-content: flex-end;
+    }
+
+    .bundle-product-list {
+      overflow-y: auto;
+    }
+  }
+
+  /* Product card */
+  .bundle-card {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: var(--spacing-xxs);
+    padding: var(--spacing-xxs);
+    border-radius: var(--rad-s);
+    background: var(--color-bg);
+    color: var(--color-text);
+  }
+
+  .bundle-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: var(--spacing-xxs);
+  }
+
+  .bundle-card-title {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xxxs);
+  }
+
+  .bundle-card-title h3 {
+    margin: 0;
+  }
+
+  .bundle-card-size {
+    margin: 0;
+    font-size: var(--type-mini-size);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--color-text-accent);
+  }
+
+  /* Stepper */
+  .bundle-stepper {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-xxxs);
+    align-self: flex-start;
+  }
+
+  .bundle-stepper button {
+    padding: var(--spacing-xxxs) var(--spacing-xxs);
+    background-color: var(--color-text);
+    color: var(--color-bg);
+    border-radius: var(--rad-s);
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  .bundle-stepper button:disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
+
+  .bundle-qty {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 24px;
+    font-size: var(--type-mini-size);
+  }
+
+  /* Progress */
+  .bundle-progress {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xxs);
+    padding: var(--spacing-xxs);
+    border-radius: var(--rad-s);
+    background: var(--color-accent);
+  }
+
+  .bundle-progress-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+  }
+
+  .bundle-progress-headline {
+    margin: 0;
+    color: var(--color-text);
+  }
+
+  .bundle-progress-count {
+    margin: 0;
+    font-size: var(--type-mini-size);
+    color: var(--color-text);
+  }
+
+  .bundle-progress-detail {
+    margin: 0;
+    font-size: var(--type-mini-size);
+    color: var(--color-text-accent);
+  }
+
+  .bundle-progress-bar {
+    height: 5px;
+    border-radius: 1px;
+    overflow: hidden;
+    background: var(--color-text-accent);
+  }
+
+  .bundle-progress-fill {
+    width: 0;
+    height: 100%;
+    background: var(--color-text);
+    transition: width var(--transition-fast);
+  }
+
+  .bundle-progress-boxes {
+    margin: 0;
+    font-size: var(--type-mini-size);
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    color: var(--color-text-accent);
+  }
+
+  /* Cart summary */
+  .bundle-cart {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-s);
+    padding: var(--spacing-xxs);
+    border-radius: var(--rad-s);
+    background: var(--color-bg);
+  }
+
+  .bundle-cart h2 {
+    margin: 0;
+  }
+
+  .bundle-cart-empty {
+    margin: 0;
+    font-size: var(--type-mini-size);
+    color: var(--color-text-accent);
+  }
+
+  .bundle-cart-lines {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+  }
+
+  .bundle-cart-line {
+    display: grid;
+    grid-template-columns: auto 1fr auto auto;
+    align-items: start;
+    gap: var(--spacing-xs);
+  }
+
+  .bundle-cart-qty {
+    font-weight: 500;
+  }
+
+  .bundle-cart-meta {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xxxs);
+  }
+
+  .bundle-cart-name {
+    margin: 0;
+  }
+
+  .bundle-cart-size {
+    margin: 0;
+    font-size: var(--type-mini-size);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--color-text-accent);
+  }
+
+  .bundle-cart-price {
+    font-weight: 500;
+  }
+
+  .bundle-cart-remove {
+    color: var(--color-text-accent);
+    font-size: 1rem;
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  .bundle-cart-remove:hover {
+    color: var(--color-text);
+  }
+
+  .bundle-cart-totals {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xxxs);
+  }
+
+  .bundle-cart-totals-line {
+    display: flex;
+    justify-content: space-between;
+    font-size: var(--type-mini-size);
+    color: var(--color-text-accent);
+  }
+
+  .bundle-cart-price-line {
+    align-items: baseline;
+    color: var(--color-text);
+    font-weight: 500;
+  }
+
+  .bundle-cart-price-line [data-price] {
+    display: inline-flex;
+    gap: var(--spacing-xxxs);
+    align-items: baseline;
+  }
+
+  .bundle-cart-strike {
+    color: var(--color-text-accent);
+    text-decoration: line-through;
+  }
+
+  .bundle-cart-saved {
+    font-size: var(--type-mini-size);
+    color: var(--color-text-accent);
+  }
+
+  .bundle-checkout {
+    width: 100%;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .bundle-progress-fill {
+      transition: none;
+    }
+  }
+{% endstylesheet %}
+
+<script type="module" src="{{ 'bundle-builder.js' | asset_url }}"></script>
+<script type="module" src="{{ 'bundle-stage.js' | asset_url }}"></script>
+
+{% schema %}
+{
+  "name": "Bundle builder",
+  "tag": "section",
+  "class": "bundle-builder-section",
+  "settings": [
+    {
+      "type": "collection",
+      "id": "collection",
+      "label": "Products collection",
+      "info": "Use single-pouch products — each variant is one priced pouch. Each product needs a 'pouch_texture' metafield (custom namespace, File reference to an image) for its 3D pouch; products without one fall back to a flat colour."
+    },
+    {
+      "type": "header",
+      "content": "Discount tiers"
+    },
+    {
+      "type": "paragraph",
+      "content": "Add a tier block per discount level. Each tier's minimum is set in BOXES (1 box = 4 pouches). Display-only projection — create a matching Shopify automatic discount in admin and keep these in sync with it."
+    },
+    {
+      "type": "header",
+      "content": "Quantities"
+    },
+    {
+      "type": "range",
+      "id": "target_boxes",
+      "label": "Starting target (boxes)",
+      "info": "Progress-bar target before the first discount tier is reached.",
+      "min": 1,
+      "max": 4,
+      "step": 1,
+      "default": 1
+    },
+    {
+      "type": "range",
+      "id": "max_boxes",
+      "label": "Maximum boxes",
+      "min": 1,
+      "max": 4,
+      "step": 1,
+      "default": 4
+    },
+    {
+      "type": "header",
+      "content": "Appearance"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-1"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "tier",
+      "name": "Discount tier",
+      "settings": [
+        {
+          "type": "range",
+          "id": "min_boxes",
+          "label": "Minimum boxes",
+          "min": 1,
+          "max": 4,
+          "step": 1,
+          "default": 2
+        },
+        {
+          "type": "range",
+          "id": "pct",
+          "label": "Discount %",
+          "min": 0,
+          "max": 50,
+          "step": 1,
+          "unit": "%",
+          "default": 10
+        }
+      ]
+    }
+  ],
+  "max_blocks": 4,
+  "presets": [
+    {
+      "name": "Bundle builder",
+      "blocks": [
+        { "type": "tier", "settings": { "min_boxes": 2, "pct": 10 } },
+        { "type": "tier", "settings": { "min_boxes": 3, "pct": 15 } },
+        { "type": "tier", "settings": { "min_boxes": 4, "pct": 20 } }
+      ]
+    }
+  ]
+}
+{% endschema %}
