@@ -1,45 +1,75 @@
 {%- comment -%}
-  Placeholder News Card — owned by sections/main-news.liquid.
-  Card design is deliberately minimal for now (image + name). Full card
-  treatment (typography, hover, date, excerpt) lands later.
+  News Card — owned by sections/main-news.liquid.
 
-  Expects: news (metaobject)
-  Field handles assumed: `name`, `image`. Adjust if your news metaobject
-  uses different handles (e.g. `title`, `cover_image`).
+  Layout: three-column flat on tablet+ — image (4:3) | lockup (date/location, title,
+  link button) | description (rich text, capped at a readable width). All columns
+  share the same top edge. On mobile, stacks vertically in the same order.
+
+  Hairlines between entries are handled by the parent (main-news.liquid), not here.
+
+  Expects: news (metaobject) with field handles:
+    - title             multi-line text
+    - date              single line text
+    - location          single line text (optional — em-dashed after date when present)
+    - news_image        file (image)
+    - news_description  rich text
+    - news_link         URL
 {%- endcomment -%}
 
 <article class="news-card">
-  <a href="{{ news.system.url }}" class="news-card-link">
-    <div class="news-card-image">
-      {%- if news.image != blank -%}
-        {{
-          news.image
-          | image_url: width: 1200
-          | image_tag:
-            loading: 'lazy',
-            sizes: '(min-width: 900px) 33vw, (min-width: 600px) 50vw, 100vw',
-            width: news.image.width,
-            height: news.image.height
-        }}
-      {%- else -%}
-        <div class="news-card-placeholder" aria-hidden="true"></div>
-      {%- endif -%}
-    </div>
+  <div class="news-card-image">
+    {%- if news.news_image != blank -%}
+      {{
+        news.news_image
+        | image_url: width: 1600
+        | image_tag:
+          loading: 'lazy',
+          sizes: '(min-width: 600px) 25vw, 100vw',
+          width: news.news_image.width,
+          height: news.news_image.height
+      }}
+    {%- else -%}
+      <div class="news-card-placeholder" aria-hidden="true"></div>
+    {%- endif -%}
+  </div>
 
-    <div class="news-card-info">
-      <h3 class="text-h3 news-card-name">{{ news.name }}</h3>
+  <div class="news-card-lockup section-lockup">
+    {%- if news.date != blank or news.location != blank -%}
+      <h1 class="text-h1">
+        {{- news.date -}}
+        {%- if news.date != blank and news.location != blank %} &mdash; {% endif -%}
+        {{- news.location -}}
+      </h1>
+    {%- endif -%}
+
+    {%- if news.title != blank -%}
+      <h3 class="text-h3">{{ news.title | newline_to_br }}</h3>
+    {%- endif -%}
+
+    {%- if news.news_link != blank -%}
+      <a class="button" href="{{ news.news_link }}">
+        {{ 'news.card.link' | t }}
+      </a>
+    {%- endif -%}
+  </div>
+
+  {%- if news.news_description != blank -%}
+    <div class="news-card-description text-body">
+      {{ news.news_description | metafield_tag }}
     </div>
-  </a>
+  {%- endif -%}
 </article>
 
 {% stylesheet %}
-  .news-card-link {
+  /* Mobile: single-column stack — image, then lockup, then description */
+  .news-card {
     display: grid;
-    gap: var(--spacing-s);
+    grid-template-columns: 1fr;
+    gap: var(--spacing-m);
   }
 
   .news-card-image {
-    aspect-ratio: 4 / 5;
+    aspect-ratio: 4 / 3;
     overflow: hidden;
     background-color: var(--color-bg-dark);
     border-radius: var(--rad-s);
@@ -57,8 +87,22 @@
     background: var(--color-border);
   }
 
-  .news-card-info {
-    display: grid;
-    gap: var(--spacing-xxs);
+  /* Tablet+: three-column row — image | lockup | description.
+     Description takes 2fr so its max-ch cap has room to breathe.
+     The lockup itself handles its internal gaps (xxs between heading rows,
+     s before the .button) via base.css §22 .section-lockup rules. */
+  @media (min-width: 600px) {
+    .news-card {
+      grid-template-columns: 1fr 1fr 2fr;
+      gap: var(--spacing-m);
+      align-items: start;
+    }
+
+    /* Description caps at 50ch and pushes to the right edge of its grid cell,
+       so visible space opens up between the lockup and the description text. */
+    .news-card-description {
+      max-width: 50ch;
+      justify-self: end;
+    }
   }
 {% endstylesheet %}

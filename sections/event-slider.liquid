@@ -1,0 +1,188 @@
+{%- comment -%}
+  Frood Event Slider — header (h1 + h3, xxs gap via .section-lockup) above a
+  horizontal scroll-snap slider of past events. Pulls from the `news` metaobject
+  and filters to entries where `add_to_previous_events` is true.
+
+  Each slide is 3:4 portrait with a caption card pinned bottom-left. Caption
+  styling intentionally mirrors .fullbleed-caption (see sections/fullbleed.liquid):
+  --color-bg-dark background, --rad-s radius, xxs padding, s internal gap, 36ch cap.
+
+  Caption contains: news.title (h1 styling) + news.event_summary (text-body).
+
+  If no past events exist, the entire section is hidden (no empty header).
+{%- endcomment -%}
+
+{%- assign past_events = shop.metaobjects.news.values | where: 'add_to_previous_events', true -%}
+
+{%- if past_events.size > 0 -%}
+  <section class="event-slider color-{{ section.settings.color_scheme }}">
+    <header class="event-slider-header section-lockup">
+      {%- if section.settings.eyebrow != blank -%}
+        <h1 class="text-h1">{{ section.settings.eyebrow }}</h1>
+      {%- endif -%}
+      {%- if section.settings.heading != blank -%}
+        <h3 class="text-h3">{{ section.settings.heading | newline_to_br }}</h3>
+      {%- endif -%}
+    </header>
+
+    <div class="event-slider-track">
+      {%- for item in past_events -%}
+        <article class="event-slide">
+          <div class="event-slide-frame">
+            {%- if item.news_image != blank -%}
+              {{
+                item.news_image
+                | image_url: width: 1200
+                | image_tag:
+                  loading: 'lazy',
+                  widths: '375, 600, 900, 1200',
+                  sizes: '(min-width: 900px) 30vw, (min-width: 600px) 45vw, 75vw',
+                  width: item.news_image.width,
+                  height: item.news_image.height,
+                  class: 'event-slide-image'
+              }}
+            {%- endif -%}
+
+            <div class="event-slide-caption">
+              {%- if item.title != blank -%}
+                <h1 class="text-h1">{{ item.title | newline_to_br }}</h1>
+              {%- endif -%}
+              {%- if item.event_summary != blank -%}
+                <p class="text-body">{{ item.event_summary | newline_to_br }}</p>
+              {%- endif -%}
+            </div>
+          </div>
+        </article>
+      {%- endfor -%}
+    </div>
+  </section>
+{%- endif -%}
+
+{% stylesheet %}
+  .event-slider {
+    padding: var(--spacing-xl) var(--spacing-m) var(--spacing-m);
+    color: var(--color-text);
+    background-color: var(--color-bg);
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-m);
+  }
+
+  /* Header's internal xxs gap between h1 + h3 comes from .section-lockup (base.css §22). */
+  .event-slider-header h3 {
+    max-width: 36ch;
+  }
+
+  /* Slider track — horizontal scroll-snap carousel.
+     Bleeds past the section's right padding so slides extend to the viewport edge,
+     giving a clear "more content right" affordance. */
+  .event-slider-track {
+    display: flex;
+    gap: var(--spacing-xs);
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+    padding-bottom: var(--spacing-xs);
+    margin-right: calc(-1 * var(--spacing-m));
+  }
+
+  .event-slider-track::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Slide widths: 75% mobile (peeks next), 45% tablet, 30% desktop */
+  .event-slide {
+    flex: 0 0 75%;
+    scroll-snap-align: start;
+  }
+
+  @media (min-width: 600px) {
+    .event-slide {
+      flex: 0 0 45%;
+    }
+  }
+
+  @media (min-width: 900px) {
+    .event-slide {
+      flex: 0 0 30%;
+    }
+  }
+
+  /* Slide frame — 3:4 portrait, image fills bg, caption pinned bottom-left.
+     Mirrors .fullbleed-frame layout pattern. */
+  .event-slide-frame {
+    position: relative;
+    aspect-ratio: 3 / 4;
+    overflow: hidden;
+    border-radius: var(--rad-s);
+    background-color: var(--color-bg-dark);
+    padding: var(--spacing-xxs);
+    display: flex;
+    align-items: flex-end;
+    justify-content: flex-start;
+  }
+
+  /* Subtle overlay over the image for caption legibility — same as fullbleed */
+  .event-slide-frame::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-color: var(--color-overlay);
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .event-slide-image {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: 0;
+  }
+
+  /* Caption card — identical styling to .fullbleed-caption */
+  .event-slide-caption {
+    position: relative;
+    z-index: 2;
+    background-color: var(--color-bg-dark);
+    border-radius: var(--rad-s);
+    padding: var(--spacing-xxs);
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-s);
+    max-width: 36ch;
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Event slider",
+  "tag": "section",
+  "class": "event-slider-section",
+  "settings": [
+    {
+      "type": "text",
+      "id": "eyebrow",
+      "label": "Eyebrow (h1 — small uppercase label)"
+    },
+    {
+      "type": "textarea",
+      "id": "heading",
+      "label": "Heading (h3)",
+      "info": "Press Enter to add a line break."
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-1"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Event slider"
+    }
+  ]
+}
+{% endschema %}

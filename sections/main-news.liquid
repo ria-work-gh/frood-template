@@ -1,5 +1,5 @@
 {%- comment -%}
-  Frood News index — section-lockup header above a grid of news items.
+  Frood News index — vertical stack of news cards. No section header (intentional).
   Loops through every entry of the `news` metaobject definition.
 
   Note: the metaobject type handle is referenced as `shop.metaobjects.news`.
@@ -8,27 +8,30 @@
 {%- endcomment -%}
 
 <section class="news-index color-{{ section.settings.color_scheme }}">
-  <header class="news-index-header section-lockup">
-    {%- if section.settings.eyebrow != blank -%}
-      <h1 class="text-h1">{{ section.settings.eyebrow }}</h1>
-    {%- endif -%}
+  {%- comment -%}
+    Filter out entries flagged as past events — those are owned by the
+    Event Slider section. `unless` catches both `false` AND unset (null) values,
+    so untoggled entries default to appearing in the index.
+  {%- endcomment -%}
+  {%- assign all_news = shop.metaobjects.news.values -%}
+  {%- assign visible_count = 0 -%}
+  {%- for item in all_news -%}
+    {%- unless item.add_to_previous_events -%}
+      {%- assign visible_count = visible_count | plus: 1 -%}
+    {%- endunless -%}
+  {%- endfor -%}
 
-    {%- if section.settings.heading != blank -%}
-      <h3 class="text-h3">{{ section.settings.heading | newline_to_br }}</h3>
-    {%- endif -%}
-  </header>
-
-  {%- assign news_items = shop.metaobjects.news.values -%}
-
-  {%- if news_items.size > 0 -%}
+  {%- if visible_count > 0 -%}
     <div class="news-index-grid">
-      {%- for item in news_items -%}
-        {% render 'news-card', news: item %}
+      {%- for item in all_news -%}
+        {%- unless item.add_to_previous_events -%}
+          {% render 'news-card', news: item %}
+        {%- endunless -%}
       {%- endfor -%}
     </div>
   {%- else -%}
     <p class="news-index-empty text-body">
-      {{ 'news.index.empty' | t: default: 'No news yet.' }}
+      {{ 'news.index.empty' | t }}
     </p>
   {%- endif -%}
 </section>
@@ -46,33 +49,30 @@
     }
   }
 
-  .news-index-header {
-    margin-bottom: var(--spacing-l);
-  }
-
-  .news-index-header h3 {
-    max-width: 36ch;
-  }
-
-  /* Mobile: 1 column */
+  /* News cards stack vertically — one card per row at every breakpoint.
+     Hairline between entries: symmetric m padding-block on each card with a
+     border-top on non-first cards puts the hairline visually centered in the
+     gap between two cards. First card has no top padding/border; last card
+     has no bottom padding. */
   .news-index-grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: var(--spacing-xs);
+    display: flex;
+    flex-direction: column;
   }
 
-  /* Tablet+: 2 columns */
-  @media (min-width: 600px) {
-    .news-index-grid {
-      grid-template-columns: repeat(2, 1fr);
-    }
+  .news-index-grid .news-card {
+    padding-block: var(--spacing-m);
   }
 
-  /* Desktop+: 3 columns (matches main-recipes — same content density) */
-  @media (min-width: 900px) {
-    .news-index-grid {
-      grid-template-columns: repeat(3, 1fr);
-    }
+  .news-index-grid .news-card:not(:first-child) {
+    border-top: 1px solid var(--color-text);
+  }
+
+  .news-index-grid .news-card:first-child {
+    padding-top: 0;
+  }
+
+  .news-index-grid .news-card:last-child {
+    padding-bottom: 0;
   }
 
   .news-index-empty {
@@ -87,19 +87,6 @@
   "tag": "section",
   "class": "news-index-section",
   "settings": [
-    {
-      "type": "text",
-      "id": "eyebrow",
-      "label": "Eyebrow (h1 — small uppercase label)",
-      "default": "News"
-    },
-    {
-      "type": "textarea",
-      "id": "heading",
-      "label": "Heading (h3)",
-      "info": "Press Enter to add a line break.",
-      "default": "What we're up to."
-    },
     {
       "type": "color_scheme",
       "id": "color_scheme",

@@ -62,8 +62,7 @@
     z-index: 9;
     background-color: transparent;
     color: var(--color-text);
-    /* top + bottom stay at xxs; only horizontal padding follows the section padding rule */
-    padding: var(--spacing-xxs) var(--spacing-xs);
+    padding: var(--spacing-xxs);
     /* Mobile: flex layout so "Menu" disclosure fills space next to cart */
     display: flex;
     align-items: flex-start;
@@ -77,11 +76,6 @@
     }
   }
 
-  @media (min-width: 900px) {
-    .header {
-      padding: var(--spacing-xxs);
-    }
-  }
 
   /* Mobile menu disclosure — "Menu" summary + dropdown panel */
   .header-mobile-menu {
@@ -216,13 +210,7 @@
     .header-right {
       position: absolute;
       top: var(--spacing-xxs);
-      right: var(--spacing-xs);
-    }
-  }
-
-  @media (min-width: 900px) {
-    .header-right {
-      right: var(--spacing-m);
+      right: var(--spacing-xxs);
     }
   }
 

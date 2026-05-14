@@ -20,8 +20,8 @@
         "heading": "Real food, made simple.\nMade for modern home cooks.",
         "button_text": "Our range",
         "button_link": "",
-        "collection": "",
-        "products_to_show": 8,
+        "collection": "store",
+        "products_to_show": 4,
         "mobile_layout": "carousel",
         "color_scheme": "scheme-1"
       }
@@ -37,19 +37,54 @@
     "fullbleed": {
       "type": "fullbleed",
       "settings": {
-        "height": "100",
-        "margins": false,
-        "caption_heading": "",
-        "caption_body": "",
+        "image": "shopify://shop_images/FOOD_DEC_LOWRESJPG-148.jpg",
+        "height": "75",
+        "margins": true,
+        "caption_heading": "The Problem",
+        "caption_body": "<p>We all want to eat better. But between busy schedules and long ingredient lists, cooking from scratch demands time we just don’t have. </p>",
         "color_scheme": "scheme-1"
       }
     },
     "feature_card": {
       "type": "feature-card",
       "settings": {
-        "heading": "A statement goes here.",
-        "card_bg": "bg-dark",
-        "card_color": "text"
+        "featured_entry": "11-05-2026",
+        "link_text": "Link",
+        "heading": "There's always something happening at Frood — a dinner, a demo, a new collab, a little moment worth sharing. This is where I keep you in the loop. Scroll through, save the dates, and come say hi.",
+        "card_bg": "text",
+        "card_color": "bg"
+      }
+    },
+    "text_image_split_Yx6jAX": {
+      "type": "text-image-split",
+      "blocks": {
+        "media_rgb7jh": {
+          "type": "media",
+          "settings": {
+            "video": "shopify://files/videos/1778436859450.publer.com.mp4",
+            "caption": ""
+          }
+        },
+        "media_tAJbmY": {
+          "type": "media",
+          "settings": {
+            "image": "shopify://shop_images/1361694b5dc69ef0f1f9a6a4c440e8cb0841506f.png",
+            "caption": "<p>Delicious Tacos with toppings made with the Swedish Meatball Blend, <a href=\"/pages/recipes\" target=\"_blank\" title=\"Recipes\">see recipe here</a></p>"
+          }
+        }
+      },
+      "block_order": [
+        "media_rgb7jh",
+        "media_tAJbmY"
+      ],
+      "name": "Text + image split",
+      "settings": {
+        "eyebrow": "Our Solution",
+        "heading": "Nourishing recipes that don't ask too much of you. Simple ingredients, big flavour, the way eating well should feel.",
+        "button_text": "Recipes",
+        "button_link": "shopify://pages/recipes",
+        "text_vertical_alignment": "top",
+        "color_scheme": ""
       }
     },
     "media_tabs": {
@@ -57,15 +92,27 @@
       "blocks": {
         "tab_1": {
           "type": "tab",
-          "settings": {}
+          "settings": {
+            "heading": "Fresh ingredients, preserved.",
+            "description": "<p>Whole produce is gently dehydrated to keep nutrients, flavour and shelf-life.</p>",
+            "video": "shopify://files/videos/bolo-cut.mov"
+          }
         },
         "tab_2": {
           "type": "tab",
-          "settings": {}
+          "settings": {
+            "heading": "Just add, mix, cook, and enjoy.",
+            "description": "<p>Add a protein, water or milk and cook or bake. Frood cuts out prep so you can make real food, fast.</p>",
+            "video": "shopify://files/videos/swed-cut.mov"
+          }
         },
         "tab_3": {
           "type": "tab",
-          "settings": {}
+          "settings": {
+            "heading": "Versatile for every kind of cook.",
+            "description": "<p>From vegan to meat-eater, dairy-free to picky kids - our blends work for every diet, dish and kitchen.</p>",
+            "video": "shopify://files/videos/curry-cut.mov"
+          }
         }
       },
       "block_order": [
@@ -84,6 +131,7 @@
     "quote",
     "fullbleed",
     "feature_card",
+    "text_image_split_Yx6jAX",
     "media_tabs"
   ]
 }
