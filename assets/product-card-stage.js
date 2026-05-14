@@ -79,7 +79,7 @@ const ROTATION_SPEED = 0.4;
 // Per-frame ease factor for the hover snap-to-front (higher = snappier).
 const SNAP_LERP = 0.2;
 // Camera framing: higher = more pull-back / breathing room around the model.
-const FRAME_MARGIN = 1.35;
+const FRAME_MARGIN = 1.6;
 // Camera elevation above the horizon (3/4 view).
 const ELEVATION = 0.22;
 const FOV = 30;
