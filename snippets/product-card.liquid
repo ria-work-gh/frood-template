@@ -170,6 +170,13 @@
     object-fit: cover;
   }
 
+  /* product-card-stage.js hides the poster via the `hidden` attribute once the
+     live render starts. The author `display: block` above outranks the UA
+     `[hidden] { display: none }`, so the attribute needs an explicit rule. */
+  .product-card-model-fallback[hidden] {
+    display: none;
+  }
+
   .product-card-placeholder {
     width: 100%;
     height: 100%;
