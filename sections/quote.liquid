@@ -4,13 +4,15 @@
 {%- endcomment -%}
 
 <section class="quote-section color-{{ section.settings.color_scheme }}">
-  {%- if section.settings.eyebrow != blank -%}
-    <h1 class="text-h1">{{ section.settings.eyebrow }}</h1>
-  {%- endif -%}
+  <div class="quote-inner{% if section.settings.use_card %} quote-inner-card{% endif %}">
+    {%- if section.settings.eyebrow != blank -%}
+      <h1 class="text-h1">{{ section.settings.eyebrow }}</h1>
+    {%- endif -%}
 
-  {%- if section.settings.heading != blank -%}
-    <h2 class="text-h2">{{ section.settings.heading }}</h2>
-  {%- endif -%}
+    {%- if section.settings.heading != blank -%}
+      <h2 class="text-h2">{{ section.settings.heading }}</h2>
+    {%- endif -%}
+  </div>
 </section>
 
 {% stylesheet %}
@@ -20,10 +22,38 @@
     align-items: center;
     justify-content: center;
     text-align: center;
-    gap: var(--spacing-xxs);
     padding: var(--spacing-xxl) var(--spacing-m);
     color: var(--color-text);
     background-color: var(--color-bg);
+  }
+
+  .quote-inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: var(--spacing-xxs);
+  }
+
+  .quote-inner-card {
+    background-color: var(--color-accent);
+    color: var(--color-text);
+    padding: var(--spacing-l) var(--spacing-m);
+    border-radius: 8px;
+    width: 100%;
+
+  }
+
+  @media (min-width: 900px) {
+    .quote-inner-card {
+      width: 75%;
+    }
+  }
+
+  @media (min-width: 1200px) {
+    .quote-inner-card {
+      width: 50%;
+    }
   }
 
   .quote-section h2 {
@@ -48,6 +78,12 @@
       "id": "heading",
       "label": "Heading (h2)",
       "default": "We built a way to cook that fits your life: real ingredients, real flavour, less effort."
+    },
+    {
+      "type": "checkbox",
+      "id": "use_card",
+      "label": "Show inside a yellow card",
+      "default": false
     },
     {
       "type": "color_scheme",
