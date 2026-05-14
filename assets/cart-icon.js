@@ -1,29 +1,31 @@
 /**
- * Cart Icon Web Component
+ * <cart-icon> — header cart link.
  *
- * Displays cart item count in the header. When cart type is 'drawer', intercepts
- * click to open the cart drawer instead of navigating to /cart. Listens for
- * 'cart:item-added' and 'cart:updated' events to keep the count in sync.
+ * The "cart" is the bundle draft, so the count comes from the shared bundle
+ * store (assets/bundle-store.js), not the native Shopify cart. Clicking the
+ * link opens the <cart-drawer> instead of navigating to /cart. Listens for
+ * 'bundle:updated' to keep the count in sync.
  *
  * Uses a data-aria-template attribute (populated via Liquid translation) to
  * keep the aria-label localized when the count updates dynamically.
  *
  * Expected markup:
  *   <cart-icon data-aria-template="{{ 'accessibility.cart_count' | t: count: '__COUNT__' }}">
- *     <a href="/cart" class="header-icon" aria-label="{{ 'accessibility.cart_count' | t: count: cart.item_count }}">
- *       <svg>...</svg>
- *       <span class="cart-count">3</span>
+ *     <a href="{{ routes.cart_url }}" class="header-cart" aria-label="…">
+ *       Cart (<span class="cart-count">0</span>)
  *     </a>
  *   </cart-icon>
  */
+import { bundleStore } from './bundle-store.js';
+
 class CartIcon extends HTMLElement {
   connectedCallback() {
     this.countElement = this.querySelector('.cart-count');
     this.clickTarget = this.querySelector('a') || this.querySelector('button');
     this.ariaTemplate = this.dataset.ariaTemplate;
 
-    // If cart type is 'drawer', intercept clicks to open the drawer
-    if (document.body.dataset.cartType === 'drawer' && this.clickTarget) {
+    // The cart is always the bundle drawer — intercept clicks to open it.
+    if (this.clickTarget) {
       this.clickTarget.addEventListener('click', (e) => {
         e.preventDefault();
         const drawer = document.querySelector('cart-drawer');
@@ -31,45 +33,22 @@ class CartIcon extends HTMLElement {
       });
     }
 
-    // Listen for cart events to keep count updated (named for cleanup)
-    this._onItemAdded = () => this.fetchCartCount();
-    this._onCartUpdated = (e) => {
-      if (e.detail?.cart) {
-        this.updateCount(e.detail.cart.item_count);
-      }
+    this._onBundleUpdated = (e) => {
+      const snapshot = e.detail?.snapshot;
+      this.updateCount(snapshot ? snapshot.totalQty : bundleStore.totalQty);
     };
+    document.addEventListener('bundle:updated', this._onBundleUpdated);
 
-    document.addEventListener('cart:item-added', this._onItemAdded);
-    document.addEventListener('cart:updated', this._onCartUpdated);
+    this.updateCount(bundleStore.totalQty);
   }
 
   disconnectedCallback() {
-    document.removeEventListener('cart:item-added', this._onItemAdded);
-    document.removeEventListener('cart:updated', this._onCartUpdated);
+    document.removeEventListener('bundle:updated', this._onBundleUpdated);
   }
 
   /**
-   * Fetch the current cart state to get the accurate item count.
-   * Used after 'cart:item-added' since that event may not include total count.
-   */
-  async fetchCartCount() {
-    try {
-      const response = await fetch('/cart.js', {
-        headers: { 'X-Requested-With': 'XMLHttpRequest' }
-      });
-      if (response.ok) {
-        const cart = await response.json();
-        this.updateCount(cart.item_count);
-      }
-    } catch {
-      // Silently fail — count will update on next interaction
-    }
-  }
-
-  /**
-   * Update the displayed cart count and the aria-label for accessibility.
-   * Uses the localized template from data-aria-template if available.
-   * @param {number} count - The new cart item count.
+   * Update the displayed count and the localized aria-label.
+   * @param {number} count
    */
   updateCount(count) {
     if (this.countElement) {

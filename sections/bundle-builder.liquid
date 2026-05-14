@@ -140,27 +140,7 @@
         <p class="bundle-progress-boxes" data-progress-boxes></p>
       </section>
 
-      <section class="bundle-cart" data-cart>
-        <h2 class="text-ui">{{ 'sections.bundle_builder.your_box' | t }}</h2>
-        <p class="bundle-cart-empty" data-cart-empty>
-          {{ 'sections.bundle_builder.empty_cart' | t }}
-        </p>
-        <ul class="bundle-cart-lines unstyled-list" data-cart-lines hidden></ul>
-        <div class="bundle-cart-totals" data-cart-totals hidden>
-          <div class="bundle-cart-totals-line">
-            <span>{{ 'sections.bundle_builder.subtotal' | t }}</span>
-            <span data-subtotal></span>
-          </div>
-          <div class="bundle-cart-totals-line bundle-cart-price-line">
-            <span>{{ 'sections.bundle_builder.price' | t }}</span>
-            <span data-price></span>
-          </div>
-        </div>
-        <button type="button" class="button bundle-checkout" data-checkout hidden>
-          {{ 'sections.bundle_builder.checkout' | t }}
-        </button>
-        <div class="form-error" data-error role="alert" hidden></div>
-      </section>
+      {% render 'bundle-cart' %}
     </aside>
   </div>
 </bundle-builder>
@@ -392,114 +372,7 @@
     color: var(--color-text-accent);
   }
 
-  /* Cart summary */
-  .bundle-cart {
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-s);
-    padding: var(--spacing-xxs);
-    border-radius: var(--rad-s);
-    background: var(--color-bg);
-  }
-
-  .bundle-cart h2 {
-    margin: 0;
-  }
-
-  .bundle-cart-empty {
-    margin: 0;
-    font-size: var(--type-mini-size);
-    color: var(--color-text-accent);
-  }
-
-  .bundle-cart-lines {
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-xs);
-  }
-
-  .bundle-cart-line {
-    display: grid;
-    grid-template-columns: auto 1fr auto auto;
-    align-items: start;
-    gap: var(--spacing-xs);
-  }
-
-  .bundle-cart-qty {
-    font-weight: 500;
-  }
-
-  .bundle-cart-meta {
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-xxxs);
-  }
-
-  .bundle-cart-name {
-    margin: 0;
-  }
-
-  .bundle-cart-size {
-    margin: 0;
-    font-size: var(--type-mini-size);
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    color: var(--color-text-accent);
-  }
-
-  .bundle-cart-price {
-    font-weight: 500;
-  }
-
-  .bundle-cart-remove {
-    color: var(--color-text-accent);
-    font-size: 1rem;
-    line-height: 1;
-    cursor: pointer;
-  }
-
-  .bundle-cart-remove:hover {
-    color: var(--color-text);
-  }
-
-  .bundle-cart-totals {
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-xxxs);
-  }
-
-  .bundle-cart-totals-line {
-    display: flex;
-    justify-content: space-between;
-    font-size: var(--type-mini-size);
-    color: var(--color-text-accent);
-  }
-
-  .bundle-cart-price-line {
-    align-items: baseline;
-    color: var(--color-text);
-    font-weight: 500;
-  }
-
-  .bundle-cart-price-line [data-price] {
-    display: inline-flex;
-    gap: var(--spacing-xxxs);
-    align-items: baseline;
-  }
-
-  .bundle-cart-strike {
-    color: var(--color-text-accent);
-    text-decoration: line-through;
-  }
-
-  .bundle-cart-saved {
-    font-size: var(--type-mini-size);
-    color: var(--color-text-accent);
-  }
-
-  .bundle-checkout {
-    width: 100%;
-  }
+  /* "Your Box" cart panel — markup + styles live in snippets/bundle-cart.liquid */
 
   @media (prefers-reduced-motion: reduce) {
     .bundle-progress-fill {
