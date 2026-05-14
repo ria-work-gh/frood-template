@@ -16,7 +16,29 @@
       {%- endfor -%}
 
       {%- if primary_model -%}
-        {{ primary_model | model_viewer_tag: class: 'product-card-model', loading: 'lazy' }}
+        {%- assign glb = primary_model.sources | where: 'format', 'glb' | first -%}
+        {%- assign model_poster = primary_model.preview_image | default: product.featured_image -%}
+        <product-card-model class="product-card-model" data-model="{{ glb.url }}">
+          <canvas class="product-card-model-canvas"></canvas>
+          {%- comment -%}
+            Static poster shown until the live three.js render's first frame —
+            and kept visible if WebGL is unavailable, the GLB fails to load, or
+            the context is lost. Also covers total JS failure (e.g. a broken
+            import map): the script never runs, so this image just stays.
+          {%- endcomment -%}
+          {%- if model_poster -%}
+            {{
+              model_poster
+              | image_url: width: 1200
+              | image_tag:
+                loading: 'lazy',
+                sizes: '(min-width: 1200px) 25vw, (min-width: 900px) 33vw, (min-width: 600px) 50vw, 100vw',
+                width: model_poster.width,
+                height: model_poster.height,
+                class: 'product-card-model-fallback'
+            }}
+          {%- endif -%}
+        </product-card-model>
       {%- elsif product.featured_image -%}
         {{
           product.featured_image
@@ -84,35 +106,11 @@
 </article>
 
 {%- comment -%}
-  Override Shopify's default model-viewer rendering attrs (tone-mapping, exposure, etc.) so
-  the pack renders look like the source GLB (no ACES desaturation, no env-map reflections).
-  The script is guarded so it only runs once per page even though this snippet renders many times.
+  Custom three.js card render. The <product-card-model> web component (one per
+  card) is drawn by a single shared WebGLRenderer — see assets/product-card-stage.js.
+  Same module URL across every card render; the browser executes it once.
 {%- endcomment -%}
-<script>
-  if (!window.__froodModelTune) {
-    window.__froodModelTune = true;
-    customElements.whenDefined('model-viewer').then(() => {
-      const tune = (el) => {
-        el.toneMapping = 'neutral';
-        el.exposure = 1;
-        el.shadowIntensity = 0;
-        el.environmentImage = 'neutral';
-        el.interactionPrompt = 'none';
-        /* Clear the Shopify-generated poster so the card bg-dark shows through during load
-           instead of a letterboxed white-strip poster image. */
-        el.poster = '';
-      };
-      document.querySelectorAll('.product-card-model').forEach(tune);
-      new MutationObserver((records) => {
-        records.forEach((r) => r.addedNodes.forEach((n) => {
-          if (n.nodeType !== 1) return;
-          if (n.classList && n.classList.contains('product-card-model')) tune(n);
-          if (n.querySelectorAll) n.querySelectorAll('.product-card-model').forEach(tune);
-        }));
-      }).observe(document.body, { childList: true, subtree: true });
-    });
-  }
-</script>
+<script type="module" src="{{ 'product-card-stage.js' | asset_url }}"></script>
 
 {% stylesheet %}
   .product-card-info {
@@ -147,16 +145,29 @@
     border-radius: var(--rad-s);
   }
 
-  /* 3D model render (GLB) — fills card aspect ratio */
-  .product-card-model,
-  .product-card-image model-viewer {
+  /* 3D model render (GLB) — custom three.js, fills the card aspect box.
+     .product-card-image keeps its --color-bg-dark background as the backdrop
+     behind the model's transparent areas. The canvas + poster image are
+     stacked (absolute); product-card-stage.js hides the poster once the live
+     render's first frame lands, and re-shows it on any failure. */
+  .product-card-model {
+    position: relative;
+    display: block;
     width: 100%;
     height: 100%;
+  }
+
+  .product-card-model-canvas,
+  .product-card-model-fallback {
+    position: absolute;
+    inset: 0;
     display: block;
-    background-color: transparent;
-    --poster-color: transparent;
-    --progress-bar-color: transparent;
-    --progress-bar-height: 0px;
+    width: 100%;
+    height: 100%;
+  }
+
+  .product-card-model-fallback {
+    object-fit: cover;
   }
 
   .product-card-placeholder {
