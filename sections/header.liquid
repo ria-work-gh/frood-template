@@ -67,6 +67,18 @@
     display: flex;
     align-items: flex-start;
     gap: var(--spacing-xxxs);
+    /* The fixed wrapper spans the full viewport but is mostly empty space
+       (transparent area around the centered bento nav). Let clicks pass
+       through it; re-enable pointer events only on the interactive pieces. */
+    pointer-events: none;
+  }
+
+  .header-mobile-menu,
+  .header-mobile-toggle,
+  .header-mobile-panel,
+  .nav-link,
+  .header-right {
+    pointer-events: auto;
   }
 
   @media (min-width: 600px) {
