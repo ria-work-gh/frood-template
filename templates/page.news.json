@@ -15,7 +15,7 @@
         "color_scheme": "scheme-1"
       }
     },
-    "event_slider_deNWFR": {
+    "event_slider_WQdf4M": {
       "type": "event-slider",
       "name": "Event slider",
       "settings": {
@@ -27,6 +27,6 @@
   },
   "order": [
     "main",
-    "event_slider_deNWFR"
+    "event_slider_WQdf4M"
   ]
 }

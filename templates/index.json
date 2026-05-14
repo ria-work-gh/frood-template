@@ -26,6 +26,44 @@
         "color_scheme": "scheme-1"
       }
     },
+    "bundle_builder_mNULHm": {
+      "type": "bundle-builder",
+      "blocks": {
+        "tier_gN8h6W": {
+          "type": "tier",
+          "settings": {
+            "min_boxes": 2,
+            "pct": 10
+          }
+        },
+        "tier_iczFYp": {
+          "type": "tier",
+          "settings": {
+            "min_boxes": 3,
+            "pct": 15
+          }
+        },
+        "tier_kbtbDN": {
+          "type": "tier",
+          "settings": {
+            "min_boxes": 4,
+            "pct": 20
+          }
+        }
+      },
+      "block_order": [
+        "tier_gN8h6W",
+        "tier_iczFYp",
+        "tier_kbtbDN"
+      ],
+      "name": "Bundle builder",
+      "settings": {
+        "collection": "store",
+        "target_boxes": 1,
+        "max_boxes": 4,
+        "color_scheme": ""
+      }
+    },
     "quote": {
       "type": "quote",
       "settings": {
@@ -128,6 +166,7 @@
   "order": [
     "hero",
     "featured_collection",
+    "bundle_builder_mNULHm",
     "quote",
     "fullbleed",
     "feature_card",

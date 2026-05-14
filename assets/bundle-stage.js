@@ -276,32 +276,69 @@ class BundleStage extends HTMLElement {
 
     // Pouch materials are created lazily per variant id and cached/shared —
     // every instance of the same product reuses one material + texture.
+    // Colour endpoints for the texture load-in crossfade below.
+    const FALLBACK_COLOR_OBJ = new THREE.Color(FALLBACK_POUCH_COLOR);
+    const WHITE_COLOR_OBJ = new THREE.Color(0xffffff);
     const pouchTextures = new Map();
     const pouchMaterials = new Map();
+    // Materials mid-crossfade from the flat fallback colour to their loaded
+    // texture — ticked in the RAF loop. See getPouchMaterial.
+    const fadingMaterials = new Set();
     function getPouchMaterial(variantId) {
       if (pouchMaterials.has(variantId)) return pouchMaterials.get(variantId);
       const url = texByVariant.get(variantId);
-      let material;
+      // Always start on the flat fallback colour with NO map bound. Binding a
+      // map before its image has loaded makes the shader sample an empty
+      // (black) texture — that's the flash of black before the pouch art
+      // appears. The map is only attached in the load callback below.
+      const material = new THREE.MeshStandardMaterial({
+        color: FALLBACK_POUCH_COLOR,
+        roughness: 0.55,
+        metalness: 0
+      });
       if (url) {
-        material = new THREE.MeshStandardMaterial({ roughness: 0.55, metalness: 0 });
-        const tex = loadTex(url, () => {
-          // Missing/blocked texture — fall back to a flat colour, don't break the scene.
-          material.map = null;
-          material.color.set(FALLBACK_POUCH_COLOR);
-          material.needsUpdate = true;
-        });
-        material.map = tex;
+        const tex = texLoader.load(
+          url,
+          () => {
+            tex.needsUpdate = true;
+            material.map = tex;
+            // Crossfade the tint fallback → white so the texture reveals
+            // smoothly instead of popping in.
+            if (reduced) {
+              material.color.copy(WHITE_COLOR_OBJ);
+            } else {
+              material.userData.fade = 0;
+              fadingMaterials.add(material);
+            }
+            material.needsUpdate = true;
+          },
+          undefined,
+          (err) => {
+            // Missing/blocked texture — stay on the flat fallback colour,
+            // don't break the scene.
+            console.error('[bundle-stage] texture failed to load:', url, err);
+          }
+        );
+        // glTF UVs are top-left origin; vanilla TextureLoader assumes bottom-left.
+        tex.flipY = false;
+        tex.colorSpace = THREE.SRGBColorSpace;
+        tex.anisotropy = maxAniso;
         pouchTextures.set(variantId, tex);
-      } else {
-        material = new THREE.MeshStandardMaterial({
-          color: FALLBACK_POUCH_COLOR,
-          roughness: 0.55,
-          metalness: 0
-        });
       }
       pouchMaterials.set(variantId, material);
       return material;
     }
+
+    // Pre-warm every pouch texture as soon as the stage is idle, so adding a
+    // pouch reuses an already-loaded material instead of waiting on a network
+    // fetch. On a cold cache / very slow connection the flat-colour fallback +
+    // crossfade still cover the wait — but for most adds the texture is ready
+    // before the pouch is even placed.
+    const prewarmTextures = () => {
+      for (const variantId of texByVariant.keys()) getPouchMaterial(variantId);
+    };
+    if ('requestIdleCallback' in window) requestIdleCallback(prewarmTextures);
+    else setTimeout(prewarmTextures, 0);
 
     // ---- Fake contact-shadow resources (shared) ----
     const shadowTexture = (() => {
@@ -638,6 +675,13 @@ class BundleStage extends HTMLElement {
         else entry.pos.tick();
         entry.group.position.x = entry.pos.current.x;
         entry.group.position.z = entry.pos.current.z;
+      }
+
+      // Advance any pouch texture crossfades (fallback tint → white).
+      for (const m of fadingMaterials) {
+        m.userData.fade = Math.min(1, m.userData.fade + 0.08);
+        m.color.lerpColors(FALLBACK_COLOR_OBJ, WHITE_COLOR_OBJ, m.userData.fade);
+        if (m.userData.fade >= 1) fadingMaterials.delete(m);
       }
 
       renderer.render(scene, camera);
