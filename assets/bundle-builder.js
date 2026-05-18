@@ -1,18 +1,19 @@
 /*
   <bundle-builder> — view component for the bundle builder section (v2).
 
-  State, persistence, derived totals/tiers/discount and checkout all live in
-  the shared store (assets/bundle-store.js). This element is a thin view: it
-  parses the section markup into a config object and hands it to the store
+  State, persistence, derived totals/tiers/discount and add-to-cart all live
+  in the shared store (assets/bundle-store.js). This element is a thin view:
+  it parses the section markup into a config object and hands it to the store
   (hydrateConfig), then renders three pieces of bundle-page-only UI on every
-  'bundle:updated' — the product-card steppers, the discount progress bar, and
-  the "Your Box" panel. The panel itself is the shared snippet
+  'bundle:updated' — the product-card steppers, the discount progress bar,
+  and the "Your Box" draft panel. The panel itself is the snippet
   (snippets/bundle-cart.liquid), rendered by the shared renderer
-  (assets/bundle-cart-view.js) — the same panel <cart-drawer> uses.
+  (assets/bundle-cart-view.js).
 
-  Clicks on add/remove/clear controls and the checkout button are delegated to
-  the store. Because the store is the source of truth, a remove triggered in
-  the cart drawer flows back here as a 'bundle:updated' and re-renders.
+  Clicks on add/remove/clear controls and the [data-add-to-cart] button are
+  delegated to the store. On successful add the store dispatches
+  `cart:item-added`, which the native <cart-drawer> picks up to refresh and
+  open over the page.
 
   ----------------------------------------------------------------------------
   Expected markup (produced by sections/bundle-builder.liquid):
@@ -52,7 +53,7 @@ class BundleBuilder extends HTMLElement {
 
     // DOM refs
     this.cartPanel = this.querySelector('[data-cart]');
-    this.checkoutButton = this.querySelector('[data-checkout]');
+    this.addButton = this.querySelector('[data-add-to-cart]');
     this.errorContainer = this.querySelector('[data-error]');
 
     this._onClick = (e) => this.handleClick(e);
@@ -115,22 +116,23 @@ class BundleBuilder extends HTMLElement {
       else if (action === 'clear') bundleStore.clear(variantId);
       return;
     }
-    const checkout = e.target.closest('[data-checkout]');
-    if (checkout && this.contains(checkout)) this.checkout();
+    const add = e.target.closest('[data-add-to-cart]');
+    if (add && this.contains(add)) this.addToCart();
   }
 
-  async checkout() {
-    if (bundleStore.totalQty === 0 || !this.checkoutButton) return;
+  async addToCart() {
+    if (bundleStore.totalQty === 0 || !this.addButton) return;
     this.clearError();
-    this.checkoutButton.classList.add('is-loading');
-    this.checkoutButton.disabled = true;
+    this.addButton.classList.add('is-loading');
+    this.addButton.disabled = true;
 
     try {
-      await bundleStore.checkout();
+      await bundleStore.addToCart();
     } catch (error) {
       this.showError(error.message);
-      this.checkoutButton.classList.remove('is-loading');
-      this.checkoutButton.disabled = false;
+    } finally {
+      this.addButton.classList.remove('is-loading');
+      this.addButton.disabled = false;
     }
   }
 

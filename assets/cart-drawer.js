@@ -1,13 +1,16 @@
 /**
- * <cart-drawer> — floating "island" overlay that mirrors the bundle draft.
+ * <cart-drawer> — floating "island" overlay that mirrors the native Shopify cart.
  *
- * A second view over the shared bundle store (assets/bundle-store.js): it
- * renders the same "Your Box" panel the bundle builder shows
- * (snippets/bundle-cart.liquid via assets/bundle-cart-view.js), including
- * working remove (×) buttons. Opening it never fetches — it reads
- * bundleStore.snapshot. Mutations (remove a line) go straight to the store,
- * which persists and re-emits 'bundle:updated'; both this overlay and the
- * bundle builder (if present) re-render off that event.
+ * Body markup is server-rendered by sections/cart-drawer.liquid; this component
+ * keeps it in sync via Shopify's Section Rendering API. Listens on `document`:
+ *
+ *   'cart:updated'      detail.sections['cart-drawer'] → swap body
+ *   'cart:item-added'   detail.sections['cart-drawer'] → swap body, then open();
+ *                       if no sections payload, fetch /cart?section_id=cart-drawer
+ *
+ * Quantity/remove inside the drawer go through the embedded <cart-items>
+ * (assets/cart-items.js), which POSTs /cart/change.js with `sections:
+ * ['cart-drawer']` and re-dispatches 'cart:updated' with the bundled HTML.
  *
  * Accessibility (focus trap, ARIA): .claude/conventions/accessibility.md
  *
@@ -19,20 +22,18 @@
  *       <div class="cart-drawer-bar">
  *         <button class="cart-drawer-close" data-close>X</button>
  *       </div>
- *       <div class="cart-drawer-content">{% render 'bundle-cart' %}</div>
+ *       <div class="cart-drawer-content" data-drawer-body>
+ *         <cart-items>…native cart markup…</cart-items>
+ *       </div>
  *     </div>
  *   </cart-drawer>
  */
-import { bundleStore } from './bundle-store.js';
-import { renderBundleCart } from './bundle-cart-view.js';
 
 class CartDrawer extends HTMLElement {
   connectedCallback() {
     this.overlay = this.querySelector('[data-overlay]');
     this.closeBtn = this.querySelector('[data-close]');
-    this.panel = this.querySelector('[data-cart]');
-    this.checkoutButton = this.querySelector('[data-checkout]');
-    this.errorContainer = this.querySelector('[data-error]');
+    this.body = this.querySelector('[data-drawer-body]');
     this.previouslyFocused = null;
 
     this.handleKeydown = this.handleKeydown.bind(this);
@@ -40,18 +41,16 @@ class CartDrawer extends HTMLElement {
     this.closeBtn?.addEventListener('click', () => this.close());
     this.overlay?.addEventListener('click', () => this.close());
 
-    this._onClick = (e) => this.handleClick(e);
-    this.addEventListener('click', this._onClick);
+    this._onCartUpdated = (e) => this.refresh(e.detail?.sections?.['cart-drawer']);
+    this._onItemAdded = (e) => this.handleItemAdded(e);
 
-    this._onBundleUpdated = () => this.render();
-    document.addEventListener('bundle:updated', this._onBundleUpdated);
-
-    this.render();
+    document.addEventListener('cart:updated', this._onCartUpdated);
+    document.addEventListener('cart:item-added', this._onItemAdded);
   }
 
   disconnectedCallback() {
-    document.removeEventListener('bundle:updated', this._onBundleUpdated);
-    this.removeEventListener('click', this._onClick);
+    document.removeEventListener('cart:updated', this._onCartUpdated);
+    document.removeEventListener('cart:item-added', this._onItemAdded);
     document.removeEventListener('keydown', this.handleKeydown);
   }
 
@@ -59,64 +58,41 @@ class CartDrawer extends HTMLElement {
     return this.classList.contains('is-open');
   }
 
-  // ---- Rendering --------------------------------------------------------
+  // ---- Refresh ----------------------------------------------------------
 
-  render() {
-    if (this.panel) renderBundleCart(this.panel, bundleStore.snapshot);
+  // Swap the drawer body with the [data-drawer-body] content from a fresh
+  // server-rendered cart-drawer section. `html` is the raw section string
+  // from Shopify's Section Rendering API.
+  refresh(html) {
+    if (!html || !this.body) return;
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    const fresh = doc.querySelector('[data-drawer-body]');
+    if (fresh) this.body.innerHTML = fresh.innerHTML;
+    this.dispatchEvent(new CustomEvent('content:loaded', { bubbles: true }));
   }
 
-  // ---- Events -----------------------------------------------------------
-
-  handleClick(e) {
-    const trigger = e.target.closest('[data-action]');
-    if (trigger && this.contains(trigger)) {
-      const { action, variantId } = trigger.dataset;
-      if (action === 'clear') bundleStore.clear(variantId);
-      else if (action === 'remove') bundleStore.remove(variantId);
-      else if (action === 'add') bundleStore.add(variantId);
-      return;
+  async handleItemAdded(e) {
+    const html = e.detail?.sections?.['cart-drawer'];
+    if (html) {
+      this.refresh(html);
+    } else {
+      // Sender didn't bundle sections — fetch the section ourselves.
+      try {
+        const response = await fetch('/?section_id=cart-drawer');
+        if (response.ok) this.refresh(await response.text());
+      } catch {
+        /* network blip — skip refresh, open with stale body */
+      }
     }
-    const checkout = e.target.closest('[data-checkout]');
-    if (checkout && this.contains(checkout)) this.checkout();
-  }
-
-  async checkout() {
-    if (bundleStore.totalQty === 0 || !this.checkoutButton) return;
-    this.clearError();
-    this.checkoutButton.classList.add('is-loading');
-    this.checkoutButton.disabled = true;
-
-    try {
-      await bundleStore.checkout();
-    } catch (error) {
-      this.showError(error.message);
-      this.checkoutButton.classList.remove('is-loading');
-      this.checkoutButton.disabled = false;
-    }
-  }
-
-  showError(message) {
-    if (!this.errorContainer) return;
-    this.errorContainer.textContent = message;
-    this.errorContainer.hidden = false;
-  }
-
-  clearError() {
-    if (!this.errorContainer) return;
-    this.errorContainer.textContent = '';
-    this.errorContainer.hidden = true;
+    this.open();
   }
 
   // ---- Open / close -----------------------------------------------------
 
   /**
-   * Open the cart drawer. Re-renders from the current snapshot (in case the
-   * bundle changed while the drawer was closed), locks body scroll, traps
-   * focus, and listens for Escape.
+   * Open the cart drawer. Locks body scroll, traps focus, listens for Escape.
    */
   open() {
-    this.render();
-
     this.previouslyFocused = document.activeElement;
 
     this.classList.add('is-open');

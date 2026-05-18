@@ -40,7 +40,10 @@
 
   Fired on every mutation and on hydrateConfig. `detail.pouches` keeps
   <bundle-stage> working unchanged; `detail.snapshot` is the render-ready
-  payload consumed by assets/bundle-cart-view.js:
+  payload consumed by assets/bundle-cart-view.js. On addToCart(), the store
+  also dispatches `cart:item-added` on `document` with `{ items }` — the
+  signal the native <cart-drawer> + <cart-icon> listen for (the drawer
+  fetches its own fresh section HTML via Section Rendering API).
 
     snapshot = {
       lines:    [{ id, title, size, price, qty }],  // price = per-unit, minor units
@@ -266,13 +269,17 @@ class BundleStore {
     );
   }
 
-  // ---- Checkout ---------------------------------------------------------
+  // ---- Add to cart ------------------------------------------------------
 
-  // Collapses the ordered pouch list to per-variant quantities, POSTs them to
-  // /cart/add.js in one request (shared `_bundle` line-item property), then
-  // redirects to /checkout. Throws on failure so the calling view can show an
-  // inline error. Resolves (no return) on the redirect path.
-  async checkout() {
+  // Collapses the ordered pouch list to per-variant quantities and POSTs them
+  // to /cart/add.js in one request (shared `_bundle` line-item property so a
+  // Shopify automatic discount can target the group). On success, clears the
+  // local draft and dispatches `cart:item-added` — the native cart-drawer
+  // picks that up, fetches its own fresh section HTML, and opens. Throws on
+  // failure so the calling view can show an inline error. The thrown message
+  // includes the raw Shopify error when available, to make storefront
+  // failures debuggable.
+  async addToCart() {
     if (this.totalQty === 0) return;
 
     const items = Object.entries(this.counts).map(([id, quantity]) => ({
@@ -281,27 +288,45 @@ class BundleStore {
       properties: { _bundle: this.bundleId }
     }));
 
-    const response = await fetch('/cart/add.js', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Requested-With': 'XMLHttpRequest'
-      },
-      body: JSON.stringify({ items })
-    });
+    let response;
+    try {
+      response = await fetch('/cart/add.js', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify({ items })
+      });
+    } catch (networkError) {
+      throw new Error(this._errorMessage(`Network error: ${networkError.message}`));
+    }
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      const fallback = this.config && this.config.i18n && this.config.i18n.error;
-      throw new Error(errorData.description || fallback || 'Could not add to cart');
+      const detail = errorData.description || errorData.message || `HTTP ${response.status}`;
+      console.error('[bundle-store] /cart/add.js failed:', response.status, errorData);
+      throw new Error(this._errorMessage(detail));
     }
 
-    // Items now live in the Shopify cart — drop the local draft so returning
-    // to the site doesn't re-add them.
-    this.pouches = [];
-    this.save();
+    const data = await response.json().catch(() => ({}));
 
-    window.location.href = '/checkout';
+    // Items now live in the Shopify cart — drop the local draft and re-emit
+    // so the in-page "Your Box" panel resets to empty.
+    this.pouches = [];
+    this.bundleId = `bundle-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+    this.commit();
+
+    document.dispatchEvent(
+      new CustomEvent('cart:item-added', {
+        detail: { items: data.items || items }
+      })
+    );
+  }
+
+  _errorMessage(detail) {
+    const fallback = this.config && this.config.i18n && this.config.i18n.error;
+    return fallback ? `${fallback} (${detail})` : detail;
   }
 }
 

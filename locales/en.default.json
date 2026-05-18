@@ -237,7 +237,7 @@
       "empty_stage": "Add pouches to fill your box",
       "subtotal": "Subtotal (without discount)",
       "price": "Price",
-      "checkout": "Checkout",
+      "add_to_cart": "Add to cart",
       "progress_headline": "You are almost there:",
       "progress_headline_max": "Max discount unlocked!",
       "progress_detail": "Add {count} more {pouch} and save {pct}%",
