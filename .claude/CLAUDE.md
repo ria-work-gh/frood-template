@@ -204,6 +204,7 @@ Always include dimensions to prevent layout shift:
 
 Each snippet is owned by ONE section/area. When modifying a snippet, read its owning code:
 
+<<<<<<< HEAD
 | Snippet                    | Owner                             | Used By                                                                                                                                                                                          |
 | -------------------------- | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `product-card`             | `sections/main-collection.liquid` | featured-collection, collection, search                                                                                                                                                          |
@@ -230,6 +231,34 @@ Each snippet is owned by ONE section/area. When modifying a snippet, read its ow
 | `logo-frood`               | `sections/hero.liquid`            | Frood wordmark — inline SVG using `fill="currentColor"`; set `color` on the parent to recolor. Source SVG kept at `assets/icon.svg` for reference                                                |
 | `recipe-card`              | `sections/main-recipes.liquid`    | Recipe index grid. **Placeholder treatment** — image + name + duration only. Full card design (typography, hover, badges) lands later. Reads from `recipes` metaobject.                          |
 | `news-card`                | `sections/main-news.liquid`       | News index grid. **Placeholder treatment** — image + name only. Full card design (date, excerpt, hover) lands later. Reads from `news` metaobject.                                               |
+=======
+| Snippet | Owner | Used By |
+|---------|-------|---------|
+| `product-card` | `sections/main-collection.liquid` | featured-collection, collection, search |
+| `product-price` | `sections/main-product.liquid` | product-card, main-product |
+| `product-variant-selector` | `sections/main-product.liquid` | main-product |
+| `product-buy-buttons` | `sections/main-product.liquid` | main-product |
+| `product-gallery` | `sections/main-product.liquid` | main-product |
+| `product-upsells` | `sections/main-product.liquid` | main-product, cart-drawer |
+| ~~`quick-add`~~ | removed | Product cards no longer have a quick-add button — users click through to the product page to add to cart. `assets/quick-add.js` deleted, related markup/CSS stripped from `product-card.liquid`. |
+| `quantity-selector` | `assets/quantity-selector.js` | main-product, cart-item |
+| `cart-items` | `sections/main-cart.liquid` | main-cart, cart-drawer |
+| `cart-item` | `sections/main-cart.liquid` | cart-items |
+| `cart-totals` | `sections/main-cart.liquid` | main-cart, cart-drawer |
+| `cart-empty` | `sections/main-cart.liquid` | main-cart, cart-drawer |
+| `collection-filters` | `sections/main-collection.liquid` | main-collection |
+| `pagination` | `sections/main-collection.liquid` | collection, blog, search |
+| `article-card` | `sections/main-blog.liquid` | main-blog, search |
+| `share-buttons` | `sections/main-article.liquid` | main-article |
+| `newsletter-form` | `sections/footer.liquid` | footer, main-password |
+| `meta-tags` | `layout/theme.liquid` | theme.liquid |
+| `json-ld-organization` | `layout/theme.liquid` | theme.liquid |
+| `json-ld-product` | `sections/main-product.liquid` | main-product |
+| `icon-*` | `sections/header.liquid` | header, cart-drawer, mobile-menu |
+| `logo-frood` | `sections/hero.liquid` | Frood wordmark — inline SVG using `fill="currentColor"`; set `color` on the parent to recolor. Source SVG kept at `assets/icon.svg` for reference |
+| `recipe-card` | `sections/main-recipes.liquid` | Recipe index grid. **Placeholder treatment** — image + name + duration only. Full card design (typography, hover, badges) lands later. Reads from `recipes` metaobject. |
+| `news-card` | `sections/main-news.liquid` | News index card. Two-column on tablet+ (image 4:3 + `.section-lockup` of date/location → title → "Link" button on the left; rich-text description capped at 60ch on the right). Stacks on mobile. Reads from `news` metaobject (handles: `title`, `date`, `location`, `news_image`, `news_description`, `news_link`). |
+>>>>>>> 40f551c (18 may 11:20 commit)
 
 ## Design Tokens (Quick Reference)
 
