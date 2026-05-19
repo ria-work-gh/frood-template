@@ -1,14 +1,4 @@
 <div class="collection color-{{ section.settings.color_scheme }}" data-section-id="{{ section.id }}">
-  <header class="collection-header">
-    <h1 class="collection-title text-xl">{{ collection.title }}</h1>
-
-    {%- if collection.description != blank -%}
-      <div class="collection-description typeset">
-        {{ collection.description }}
-      </div>
-    {%- endif -%}
-  </header>
-
   {%- assign active_filter_count = 0 -%}
   {%- for filter in collection.filters -%}
     {%- assign active_filter_count = active_filter_count | plus: filter.active_values.size -%}
@@ -90,23 +80,6 @@
 {% stylesheet %}
   .collection {
     padding: var(--spacing-base);
-  }
-
-  .collection-header {
-    margin-block: var(--spacing-xl);
-    text-align: center;
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-base);
-  }
-
-  .collection-description {
-    max-width: 45ch;
-    margin-inline: auto;
-  }
-
-  .collection-description {
-    margin-top: var(--spacing-s);
   }
 
   .collection-toolbar {

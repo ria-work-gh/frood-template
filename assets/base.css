@@ -409,6 +409,19 @@ body {
   color: var(--color-accent);
 }
 
+/* Secondary button — same shape/size/type as .button, lighter background.
+   Used on product-card hover actions (VIEW vs ADD pair). Hover inverts the
+   colors the same way the primary does. */
+.button.secondary {
+  background-color: var(--color-bg-dark);
+  color: var(--color-text);
+}
+
+.button.secondary:hover {
+  background-color: var(--color-text);
+  color: var(--color-bg-dark);
+}
+
 .button:disabled,
 .button.is-loading {
   opacity: 0.6;

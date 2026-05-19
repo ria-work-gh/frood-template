@@ -56,7 +56,10 @@
       "quick_add": "Quick add",
       "choose_options": "Choose options",
       "view": "View",
-      "shop_now": "Shop now"
+      "add": "Add",
+      "instructions": "Instructions",
+      "ingredients": "Ingredients",
+      "nutritional_info": "Nutritional info"
     }
   },
   "collections": {

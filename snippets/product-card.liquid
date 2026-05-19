@@ -103,6 +103,34 @@
       {%- endif -%}
     </a>
 
+    {%- comment -%}
+      Hover-revealed quick actions. Sibling of .product-card-image-link (NOT
+      a child) — nesting a <button>/<form> inside an <a> is invalid HTML.
+      Positioned absolutely at the bottom of the image area. CSS flips
+      pointer-events so the underlying image-link receives clicks when actions
+      are hidden, and the buttons take their own clicks when revealed on
+      hover. Animation mirrors the header nav stagger pattern.
+    {%- endcomment -%}
+    {%- assign first_variant = product.selected_or_first_available_variant -%}
+    <div class="product-card-actions">
+      <a href="{{ product.url }}" class="button secondary">{{ 'products.product.view' | t }}</a>
+
+      {%- if first_variant -%}
+        <product-card-quick-add>
+          <form action="/cart/add" method="post">
+            <input type="hidden" name="id" value="{{ first_variant.id }}">
+            <button
+              type="submit"
+              class="button"
+              {%- unless product.available %} disabled aria-disabled="true"{%- endunless -%}
+            >
+              {{ 'products.product.add' | t }}
+            </button>
+          </form>
+        </product-card-quick-add>
+      {%- endif -%}
+    </div>
+
     {%- comment -%} Badge priority: Sold out > Sale. The "new" auto-detect was removed. {%- endcomment -%}
     {%- liquid
       assign badge_text = ''
@@ -152,6 +180,10 @@
   <script type="module" src="{{ 'product-card-stage.js' | asset_url }}"></script>
 {%- elsif video_src -%}
   <script type="module" src="{{ 'product-card-hover-video.js' | asset_url }}"></script>
+{%- endif -%}
+
+{%- if first_variant -%}
+  <script type="module" src="{{ 'product-card-quick-add.js' | asset_url }}"></script>
 {%- endif -%}
 
 {% stylesheet %}
@@ -223,6 +255,64 @@
     width: 100%;
     height: 100%;
     background: var(--color-border);
+  }
+
+  /* Hover-revealed quick actions overlay. Sits at the bottom of the image
+     area (over the image/video). Animation mirrors the header nav stagger
+     (sections/header.liquid §) — buttons start translateY(-6px) + opacity 0
+     and ease into place with a 40ms stagger when the card is hovered.
+     pointer-events flip so the underlying image-link receives clicks when
+     actions are hidden, and the buttons receive them when revealed. Only on
+     hover-capable devices — touch users never see this layer and tap straight
+     through to the PDP via the image-link. */
+  .product-card-actions {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    gap: var(--spacing-xxs);
+    justify-content: center;
+    padding: var(--spacing-s);
+    pointer-events: none;
+    z-index: 2;
+  }
+
+  .product-card-actions product-card-quick-add,
+  .product-card-actions product-card-quick-add form {
+    display: block;
+  }
+
+  /* Each child gets the nav-item-in motion: small slide down + fade. Hidden
+     by default, revealed on .product-card:hover. transition-delay creates the
+     stagger (VIEW first, ADD 40ms later). */
+  .product-card-actions > * {
+    opacity: 0;
+    transform: translateY(-6px);
+    transition:
+      opacity 0.22s cubic-bezier(0.2, 0.8, 0.2, 1),
+      transform 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+
+  .product-card-actions > *:nth-child(2) {
+    transition-delay: 0.04s;
+  }
+
+  @media (hover: hover) {
+    .product-card:hover .product-card-actions {
+      pointer-events: auto;
+    }
+
+    .product-card:hover .product-card-actions > * {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .product-card-actions > * {
+      transition: none;
+    }
   }
 
   /* Hover video — sits over the always-visible <img>, faded in on

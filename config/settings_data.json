@@ -9,11 +9,16 @@
  */
 {
   "current": {
+    "favicon": "shopify://shop_images/faviconf.jpg",
     "cart_type": "drawer",
     "product_card_aspect_ratio": "portrait",
     "sections": {
       "cart-drawer": {
         "type": "cart-drawer",
+        "settings": {}
+      },
+      "search-drawer": {
+        "type": "search-drawer",
         "settings": {}
       }
     },

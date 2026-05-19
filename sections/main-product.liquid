@@ -1,140 +1,284 @@
 <section class="main-product color-{{ section.settings.color_scheme }}">
   {% render 'json-ld-product', product: product %}
 
-  <div class="product-layout">
-    <div class="product-gallery-column">
-      {% render 'product-gallery', product: product %}
-    </div>
+  {%- comment -%}
+    Background slider: product.media from index 2 onwards (the first two
+    media entries are reserved — media[0] is rendered inside Box 1 as the
+    product render; media[1] is currently unused but kept reserved per spec).
+  {%- endcomment -%}
+  {%- if product.media.size > 2 -%}
+    <product-bg-slider class="product-bg-slider" aria-hidden="true">
+      <div class="product-bg-slider-viewport">
+        <div class="product-bg-slider-container">
+          {%- for media in product.media offset: 2 -%}
+            <div class="product-bg-slider-slide">
+              {%- case media.media_type -%}
+                {%- when 'image' -%}
+                  {{ media | image_url: width: 2400 | image_tag:
+                    loading: 'lazy',
+                    alt: '',
+                    width: media.width,
+                    height: media.height
+                  }}
+                {%- when 'video' -%}
+                  {{ media | video_tag: autoplay: true, loop: true, muted: true, controls: false, playsinline: true }}
+                {%- when 'external_video' -%}
+                  {%- if media.host == 'youtube' -%}
+                    <iframe
+                      src="https://www.youtube.com/embed/{{ media.external_id }}?autoplay=1&mute=1&loop=1&controls=0&playlist={{ media.external_id }}"
+                      allow="autoplay; encrypted-media"
+                      allowfullscreen
+                      loading="lazy"
+                      title=""
+                    ></iframe>
+                  {%- elsif media.host == 'vimeo' -%}
+                    <iframe
+                      src="https://player.vimeo.com/video/{{ media.external_id }}?autoplay=1&muted=1&loop=1&controls=0"
+                      allow="autoplay; encrypted-media"
+                      allowfullscreen
+                      loading="lazy"
+                      title=""
+                    ></iframe>
+                  {%- endif -%}
+                {%- when 'model' -%}
+                  {{ media | model_viewer_tag }}
+              {%- endcase -%}
+            </div>
+          {%- endfor -%}
+        </div>
+      </div>
+    </product-bg-slider>
+  {%- endif -%}
 
-    <product-form class="product-info-column" data-section-id="{{ section.id }}">
-      <script type="application/json" class="product-json">
-        {{ product | json }}
-      </script>
+  <product-form class="product-boxes" data-section-id="{{ section.id }}">
+    <script type="application/json" class="product-json">
+      {{ product | json }}
+    </script>
 
-      {%- form 'product', product -%}
-        <input type="hidden" name="id" value="{{ product.selected_or_first_available_variant.id }}">
+    {%- form 'product', product -%}
+      <input type="hidden" name="id" value="{{ product.selected_or_first_available_variant.id }}">
 
-        {%- for block in section.blocks -%}
-          {%- case block.type -%}
-            {%- when 'title' -%}
-              <h1 class="product-title text-xl" {{ block.shopify_attributes }}>
-                {{ product.title }}
-              </h1>
+      {%- comment -%} Box 1: title + product render (media[0]) + description + buy controls {%- endcomment -%}
+      <div class="product-box product-box-main">
+        <h1 class="text-h2 product-box-title">{{ product.title }}</h1>
 
-            {%- when 'price' -%}
-              <div class="product-price-block" data-product-price data-variant-render="price" {{ block.shopify_attributes }}>
-                {% render 'product-price', product: product %}
-              </div>
+        {%- assign primary_media = product.media[0] -%}
+        {%- if primary_media -%}
+          <div class="product-box-render">
+            {%- case primary_media.media_type -%}
+              {%- when 'image' -%}
+                {{ primary_media | image_url: width: 1200 | image_tag:
+                  loading: 'eager',
+                  alt: primary_media.alt | default: product.title,
+                  width: primary_media.width,
+                  height: primary_media.height
+                }}
+              {%- when 'video' -%}
+                {{ primary_media | video_tag: autoplay: true, loop: true, muted: true, controls: false, playsinline: true }}
+              {%- when 'external_video' -%}
+                {%- if primary_media.host == 'youtube' -%}
+                  <iframe
+                    src="https://www.youtube.com/embed/{{ primary_media.external_id }}?autoplay=1&mute=1&loop=1&controls=0&playlist={{ primary_media.external_id }}"
+                    allow="autoplay; encrypted-media"
+                    allowfullscreen
+                    loading="lazy"
+                    title="{{ product.title }}"
+                  ></iframe>
+                {%- elsif primary_media.host == 'vimeo' -%}
+                  <iframe
+                    src="https://player.vimeo.com/video/{{ primary_media.external_id }}?autoplay=1&muted=1&loop=1&controls=0"
+                    allow="autoplay; encrypted-media"
+                    allowfullscreen
+                    loading="lazy"
+                    title="{{ product.title }}"
+                  ></iframe>
+                {%- endif -%}
+              {%- when 'model' -%}
+                {{ primary_media | model_viewer_tag }}
+            {%- endcase -%}
+          </div>
+        {%- endif -%}
 
-            {%- when 'variant_selector' -%}
-              <div class="product-variants" {{ block.shopify_attributes }}>
-                {% render 'product-variant-selector', product: product %}
-              </div>
+        {%- if product.description != blank -%}
+          <div class="product-box-description typeset">
+            {{ product.description }}
+          </div>
+        {%- endif -%}
 
-            {%- when 'buy_buttons' -%}
-              <div class="product-buy-buttons" data-variant-render="buy-buttons" {{ block.shopify_attributes }}>
-                {% render 'product-buy-buttons', product: product, show_quantity: block.settings.show_quantity %}
-              </div>
+        <div class="product-box-buy">
+          <div data-variant-render="price">
+            {% render 'product-price', product: product %}
+          </div>
 
-            {%- when 'description' -%}
-              <div class="product-description typeset" {{ block.shopify_attributes }}>
-                {{ product.description }}
-              </div>
+          <div class="product-variants">
+            {% render 'product-variant-selector', product: product %}
+          </div>
 
-            {%- when 'accordion' -%}
-              {%- unless prev_block_type == 'accordion' -%}
-                <div class="product-accordions">
-              {%- endunless -%}
+          <div data-variant-render="buy-buttons">
+            {% render 'product-buy-buttons', product: product, show_quantity: section.settings.show_quantity %}
+          </div>
+        </div>
+      </div>
 
-              <details class="product-accordion" {{ block.shopify_attributes }}>
-                <summary>
-                  {{ block.settings.heading }}
-                  <span class="product-accordion-icon" aria-hidden="true">+</span>
-                </summary>
-                <div class="typeset">{{ block.settings.content }}</div>
-              </details>
+      {%- comment -%} Box 2: Instructions (metafield) {%- endcomment -%}
+      {%- if product.metafields.custom.instructions != blank -%}
+        <details class="product-box product-accordion">
+          <summary>
+            <span class="text-ui">{{ 'products.product.instructions' | t }}</span>
+            <span class="product-accordion-icon" aria-hidden="true">+</span>
+          </summary>
+          <div class="product-accordion-content typeset">
+            {{ product.metafields.custom.instructions }}
+          </div>
+        </details>
+      {%- endif -%}
 
-              {%- assign next_block = section.blocks[forloop.index] -%}
-              {%- unless next_block.type == 'accordion' -%}
-                </div>
-              {%- endunless -%}
+      {%- comment -%} Box 3: Ingredients (metafield) {%- endcomment -%}
+      {%- if product.metafields.custom.ingredients != blank -%}
+        <details class="product-box product-accordion">
+          <summary>
+            <span class="text-ui">{{ 'products.product.ingredients' | t }}</span>
+            <span class="product-accordion-icon" aria-hidden="true">+</span>
+          </summary>
+          <div class="product-accordion-content typeset">
+            {{ product.metafields.custom.ingredients }}
+          </div>
+        </details>
+      {%- endif -%}
 
-            {%- when 'upsells' -%}
-              <div class="product-upsells" {{ block.shopify_attributes }}>
-                {% render 'product-upsells', product: product, heading: block.settings.heading %}
-              </div>
-
-            {%- when 'custom_text' -%}
-              <div class="product-custom-text typeset" {{ block.shopify_attributes }}>
-                {{ block.settings.content }}
-              </div>
-
-            {%- when '@app' -%}
-              {% render block %}
-          {%- endcase -%}
-          {%- assign prev_block_type = block.type -%}
-        {%- endfor -%}
-      {%- endform -%}
-    </product-form>
-  </div>
+      {%- comment -%} Box 4: Nutritional info (metafield) {%- endcomment -%}
+      {%- if product.metafields.custom.nutritional_info != blank -%}
+        <details class="product-box product-accordion">
+          <summary>
+            <span class="text-ui">{{ 'products.product.nutritional_info' | t }}</span>
+            <span class="product-accordion-icon" aria-hidden="true">+</span>
+          </summary>
+          <div class="product-accordion-content typeset">
+            {{ product.metafields.custom.nutritional_info }}
+          </div>
+        </details>
+      {%- endif -%}
+    {%- endform -%}
+  </product-form>
 </section>
 
 <script src="{{ 'product-form.js' | asset_url }}" defer></script>
 <script src="{{ 'embla-carousel.umd.js' | asset_url }}" defer></script>
-<script src="{{ 'product-gallery.js' | asset_url }}" defer></script>
+<script src="{{ 'product-bg-slider.js' | asset_url }}" defer></script>
 <script src="{{ 'quantity-selector.js' | asset_url }}" defer></script>
 
 {% stylesheet %}
-  .product-layout {
-    display: grid;
-    grid-template-columns: 1fr;
-  }
-
-  @media (min-width: 900px) {
-    .product-layout {
-      grid-template-columns: 1fr 1fr;
-    }
-  }
-
-  .product-gallery-column {
+  .main-product {
     position: relative;
+    min-height: calc(100svh - var(--header-height));
+    padding: var(--spacing-m);
+  }
+
+  @media (max-width: 899px) {
+    .main-product {
+      padding: var(--spacing-xs);
+    }
+  }
+
+  /* Background slider — fills section, sits behind boxes */
+  .product-bg-slider {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    display: block;
     overflow: hidden;
-    aspect-ratio: 1 / 1;
   }
 
-  @media (min-width: 900px) {
-    .product-gallery-column {
-      position: sticky;
-      top: var(--header-height);
-      height: calc(100svh - var(--header-height));
-      aspect-ratio: auto;
-      align-self: start;
-    }
+  .product-bg-slider-viewport {
+    height: 100%;
+    overflow: hidden;
   }
 
-  .product-info-column {
-    padding: var(--spacing-m) var(--spacing-base);
+  .product-bg-slider-container {
+    display: flex;
+    height: 100%;
   }
 
-  @media (min-width: 900px) {
-    .product-info-column {
-      min-height: calc(100svh - var(--header-height));
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-    }
+  .product-bg-slider-slide {
+    flex: 0 0 100%;
+    min-width: 0;
+    height: 100%;
   }
 
-  .product-info-column form {
+  .product-bg-slider-slide img,
+  .product-bg-slider-slide video,
+  .product-bg-slider-slide iframe,
+  .product-bg-slider-slide model-viewer {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    border: 0;
+  }
+
+  /* Boxes column — left-aligned, stacked, sits on top of slider */
+  .product-boxes {
+    position: relative;
+    z-index: 1;
     display: flex;
     flex-direction: column;
-    gap: var(--spacing-base);
-    max-width: 450px;
-    margin-inline: auto;
+    gap: var(--spacing-s);
+    max-width: 480px;
+    width: 100%;
   }
 
-  .product-title {
+  /* Shared box treatment — solid panel with brand bg */
+  .product-box {
+    background: var(--color-bg);
+    color: var(--color-text);
+    border-radius: var(--rad-s);
+    padding: var(--spacing-m);
+  }
+
+  /* Box 1: main content stack */
+  .product-box-main {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-s);
+  }
+
+  .product-box-title {
     margin: 0;
+  }
+
+  .product-box-render {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    overflow: hidden;
+    border-radius: var(--rad-s);
+    background: var(--color-bg-dark);
+  }
+
+  .product-box-render img,
+  .product-box-render video,
+  .product-box-render iframe,
+  .product-box-render model-viewer {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    border: 0;
+  }
+
+  .product-box-description {
+    margin: 0;
+  }
+
+  .product-box-buy {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-s);
+  }
+
+  .product-variants {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
   }
 
   .variant-options {
@@ -154,8 +298,9 @@
     flex: 1;
   }
 
-  .product-accordions {
-    border-top: 1px solid var(--color-text-light);
+  /* Accordion boxes (Instructions / Ingredients / Nutritional info) */
+  .product-accordion {
+    padding: 0;
   }
 
   .product-accordion summary {
@@ -163,8 +308,12 @@
     justify-content: space-between;
     align-items: center;
     cursor: pointer;
-    padding: var(--spacing-s) 0;
-    border-bottom: 1px solid var(--color-text-light);
+    padding: var(--spacing-s) var(--spacing-m);
+    list-style: none;
+  }
+
+  .product-accordion summary::-webkit-details-marker {
+    display: none;
   }
 
   .product-accordion-icon {
@@ -176,8 +325,8 @@
     transform: rotate(45deg);
   }
 
-  .product-accordion .typeset {
-    padding: var(--spacing-s) 0;
+  .product-accordion-content {
+    padding: 0 var(--spacing-m) var(--spacing-s);
   }
 
   product-form.is-loading [data-variant-render] {
@@ -195,82 +344,15 @@
       "id": "color_scheme",
       "label": "Color scheme",
       "default": "scheme-1"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_quantity",
+      "label": "Show quantity selector",
+      "default": true
     }
   ],
   "blocks": [
-    {
-      "type": "title",
-      "name": "Title",
-      "limit": 1
-    },
-    {
-      "type": "price",
-      "name": "Price",
-      "limit": 1
-    },
-    {
-      "type": "variant_selector",
-      "name": "Variant selector",
-      "limit": 1
-    },
-    {
-      "type": "buy_buttons",
-      "name": "Buy buttons",
-      "limit": 1,
-      "settings": [
-        {
-          "type": "checkbox",
-          "id": "show_quantity",
-          "label": "Show quantity selector",
-          "default": true
-        }
-      ]
-    },
-    {
-      "type": "description",
-      "name": "Description",
-      "limit": 1
-    },
-    {
-      "type": "accordion",
-      "name": "Accordion",
-      "settings": [
-        {
-          "type": "text",
-          "id": "heading",
-          "label": "Heading"
-        },
-        {
-          "type": "richtext",
-          "id": "content",
-          "label": "Content"
-        }
-      ]
-    },
-    {
-      "type": "upsells",
-      "name": "Upsells",
-      "limit": 1,
-      "settings": [
-        {
-          "type": "text",
-          "id": "heading",
-          "label": "Heading",
-          "default": "Complete the set"
-        }
-      ]
-    },
-    {
-      "type": "custom_text",
-      "name": "Custom text",
-      "settings": [
-        {
-          "type": "richtext",
-          "id": "content",
-          "label": "Content"
-        }
-      ]
-    },
     {
       "type": "@app"
     }
