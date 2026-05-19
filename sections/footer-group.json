@@ -31,15 +31,22 @@
         "link_list_tXJcwB": {
           "type": "link_list",
           "settings": {
-            "heading": "Legal",
-            "menu": "footer-legal"
+            "heading": "Pages",
+            "menu": "pages"
           }
         },
         "link_list_9ByDgm": {
           "type": "link_list",
           "settings": {
-            "heading": "Follow",
-            "menu": "footer-social-media"
+            "heading": "Contact",
+            "menu": "contact"
+          }
+        },
+        "link_list_VpgbTy": {
+          "type": "link_list",
+          "settings": {
+            "heading": "Legal",
+            "menu": "legal"
           }
         }
       },
@@ -47,7 +54,8 @@
         "newsletter_hbHBmy",
         "link_list_kfceNd",
         "link_list_tXJcwB",
-        "link_list_9ByDgm"
+        "link_list_9ByDgm",
+        "link_list_VpgbTy"
       ],
       "settings": {
         "color_scheme": ""

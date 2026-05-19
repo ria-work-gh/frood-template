@@ -10,7 +10,7 @@
     [data-cart-empty]                       empty-state message
     [data-cart-lines]                       <ul> — JS rebuilds <li>s here
     [data-cart-totals] > [data-subtotal] [data-price]
-    [data-add-to-cart]                      add-to-cart button
+    [data-checkout]                         checkout button
   `root` also carries data-i18n-remove — the aria-label template for the
   per-line × buttons, with a literal {name} token JS substitutes.
 */
@@ -73,13 +73,13 @@ export function renderBundleCart(root, snapshot) {
   const empty = root.querySelector('[data-cart-empty]');
   const linesEl = root.querySelector('[data-cart-lines]');
   const totalsEl = root.querySelector('[data-cart-totals]');
-  const addBtn = root.querySelector('[data-add-to-cart]');
+  const checkoutBtn = root.querySelector('[data-checkout]');
   const hasItems = snapshot.totalQty > 0;
 
   if (empty) empty.hidden = hasItems;
   if (linesEl) linesEl.hidden = !hasItems;
   if (totalsEl) totalsEl.hidden = !hasItems;
-  if (addBtn) addBtn.hidden = !hasItems;
+  if (checkoutBtn) checkoutBtn.hidden = !hasItems;
 
   if (linesEl) {
     linesEl.textContent = '';

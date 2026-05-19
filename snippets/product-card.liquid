@@ -1,20 +1,34 @@
 {%- comment -%}
   Renders a product card for collection grids and featured collections.
   Expects: product (product object)
+
+  Media-type detection happens once at the top so the article body AND the
+  conditional <script> tags can both reference the same variables. This is the
+  whole point of Fix 1 — we only load product-card-stage.js (three.js, ~150KB)
+  for cards with a 3D model, and product-card-hover-video.js for cards with a
+  video. Pages with no GLB products skip three.js entirely.
 {%- endcomment -%}
+
+{%- assign primary_model = nil -%}
+{%- assign hover_video = nil -%}
+{%- assign video_src = nil -%}
+{%- for media in product.media -%}
+  {%- if primary_model == nil and media.media_type == 'model' -%}
+    {%- assign primary_model = media -%}
+  {%- endif -%}
+  {%- if hover_video == nil and media.media_type == 'video' -%}
+    {%- assign hover_video = media -%}
+  {%- endif -%}
+  {%- if primary_model and hover_video -%}{%- break -%}{%- endif -%}
+{%- endfor -%}
+
+{%- if hover_video -%}
+  {%- assign video_src = hover_video.sources | where: 'format', 'mp4' | sort: 'width' | first -%}
+{%- endif -%}
 
 <article class="product-card">
   <div class="product-card-image aspect-{{ settings.product_card_aspect_ratio }}">
     <a href="{{ product.url }}" class="product-card-image-link" tabindex="-1" aria-hidden="true">
-      {%- comment -%} Look for a 3D model in the product's media — Frood uses GLB pack renders on cards {%- endcomment -%}
-      {%- assign primary_model = nil -%}
-      {%- for media in product.media -%}
-        {%- if media.media_type == 'model' -%}
-          {%- assign primary_model = media -%}
-          {%- break -%}
-        {%- endif -%}
-      {%- endfor -%}
-
       {%- if primary_model -%}
         {%- assign glb = primary_model.sources | where: 'format', 'glb' | first -%}
         {%- assign model_poster = primary_model.preview_image | default: product.featured_image -%}
@@ -50,7 +64,29 @@
             height: product.featured_image.height
         }}
 
-        {%- if product.media.size > 1 and product.media[1].media_type == 'image' -%}
+        {%- if video_src -%}
+          {%- comment -%}
+            Hover overlay. The <img> above is the always-visible still
+            (lazy-loaded, srcset). This <video> sits over it at opacity:0 and
+            fades in only on .product-card:hover (CSS). JS handles data-src→src
+            promotion after an 80ms hover-intent debounce, play, and reset-to-0
+            on leave. preload="none" + data-src means zero MP4 bytes per card
+            on initial page load — only fetched when the user actually settles
+            on a card.
+          {%- endcomment -%}
+          <product-card-hover-video class="product-card-hover-video">
+            <video
+              class="product-card-video"
+              muted
+              playsinline
+              preload="none"
+              tabindex="-1"
+              aria-hidden="true"
+            >
+              <source data-src="{{ video_src.url }}" type="video/mp4">
+            </video>
+          </product-card-hover-video>
+        {%- elsif product.media.size > 1 and product.media[1].media_type == 'image' -%}
           {{
             product.media[1]
             | image_url: width: 1200
@@ -106,11 +142,17 @@
 </article>
 
 {%- comment -%}
-  Custom three.js card render. The <product-card-model> web component (one per
-  card) is drawn by a single shared WebGLRenderer — see assets/product-card-stage.js.
-  Same module URL across every card render; the browser executes it once.
+  Conditional script loading (Fix 1). 3D-model render and hover-video are
+  mutually exclusive on a single card, so emit at most one script. Pages with
+  no 3D products skip three.js entirely (~150KB); pages with no hover videos
+  skip product-card-hover-video.js. Browser dedupes the fetch when multiple
+  cards on the same page emit the same script tag.
 {%- endcomment -%}
-<script type="module" src="{{ 'product-card-stage.js' | asset_url }}"></script>
+{%- if primary_model -%}
+  <script type="module" src="{{ 'product-card-stage.js' | asset_url }}"></script>
+{%- elsif video_src -%}
+  <script type="module" src="{{ 'product-card-hover-video.js' | asset_url }}"></script>
+{%- endif -%}
 
 {% stylesheet %}
   .product-card-info {
@@ -141,20 +183,20 @@
   .product-card-image {
     position: relative;
     overflow: hidden;
-    background-color: var(--color-bg-dark);
     border-radius: var(--rad-s);
   }
 
   /* 3D model render (GLB) — custom three.js, fills the card aspect box.
-     .product-card-image keeps its --color-bg-dark background as the backdrop
-     behind the model's transparent areas. The canvas + poster image are
-     stacked (absolute); product-card-stage.js hides the poster once the live
-     render's first frame lands, and re-shows it on any failure. */
+     The bg-dark sits on the model wrapper (not .product-card-image) so it only
+     appears behind the GLB's transparent corners — video/image cards stay clean.
+     product-card-stage.js hides the poster once the live render's first frame
+     lands, and re-shows it on any failure. */
   .product-card-model {
     position: relative;
     display: block;
     width: 100%;
     height: 100%;
+    background-color: var(--color-bg-dark);
   }
 
   .product-card-model-canvas,
@@ -181,6 +223,40 @@
     width: 100%;
     height: 100%;
     background: var(--color-border);
+  }
+
+  /* Hover video — sits over the always-visible <img>, faded in on
+     .product-card:hover. Mirrors .product-card-image-hover (base.css §13) so
+     the image-hover fallback and the video-hover treatment look identical.
+     pointer-events: none keeps clicks routing to the underlying link. */
+  .product-card-hover-video {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transition: opacity var(--transition-fast);
+    pointer-events: none;
+  }
+
+  .product-card-video {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  @media (hover: hover) {
+    .product-card:hover .product-card-hover-video {
+      opacity: 1;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .product-card-hover-video {
+      transition: none;
+    }
+    .product-card:hover .product-card-hover-video {
+      opacity: 0;
+    }
   }
 
   .product-card-badge {

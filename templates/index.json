@@ -20,7 +20,7 @@
         "heading": "Real food, made simple.\nMade for modern home cooks.",
         "button_text": "Our range",
         "button_link": "",
-        "collection": "store",
+        "collection": "bundles",
         "products_to_show": 4,
         "mobile_layout": "carousel",
         "color_scheme": "scheme-1"
@@ -76,7 +76,7 @@
     "fullbleed": {
       "type": "fullbleed",
       "settings": {
-        "image": "shopify://shop_images/FOOD_DEC_LOWRESJPG-148.jpg",
+        "image": "shopify://shop_images/FOOD_DEC_LOWRESJPG-139.jpg",
         "height": "75",
         "margins": true,
         "caption_heading": "The Problem",
@@ -100,7 +100,7 @@
         "media_rgb7jh": {
           "type": "media",
           "settings": {
-            "video": "shopify://files/videos/1778436859450.publer.com.mp4",
+            "video": "shopify://files/videos/c91ffce7e72546b4ba99c321f960b581_bf5126f4-3ee9-4802-8abf-948ddaf45c1c.mp4",
             "caption": ""
           }
         },

@@ -1,13 +1,9 @@
 {%- comment -%}
-  Cart drawer — a floating "island" overlay that scales in from the top-right.
-  Renders the native Shopify cart (cart-items + cart-totals, or cart-empty),
-  refreshed via Shopify's Section Rendering API. Listens on `document` for
-  `cart:item-added` (opens itself + swaps body) and `cart:updated` (swaps
-  body only). Quantity changes and removes inside the drawer go through
-  the embedded <cart-items> component (assets/cart-items.js).
-
-  Section id `cart-drawer` is the key for ?section_id=cart-drawer and
-  bundled-sections POST bodies (`sections: ['cart-drawer']`).
+  Cart drawer — a floating "island" overlay that scales in from the top-right,
+  styled to match the bundle builder's "Your Box" column. A second view over
+  the bundle store: renders the shared bundle-cart snippet from localStorage,
+  with working remove buttons + checkout. No native Shopify cart involvement —
+  the bundle is this store's only purchase path.
 {%- endcomment -%}
 <cart-drawer id="cart-drawer" class="cart-drawer" role="dialog" aria-modal="true" aria-hidden="true" aria-label="{{ 'cart.drawer.title' | t }}">
   <div class="cart-drawer-overlay" data-overlay></div>
@@ -18,22 +14,13 @@
         {% render 'icon-close' %}
       </button>
     </div>
-    <div class="cart-drawer-content" data-drawer-body>
-      <cart-items>
-        {%- if cart.item_count > 0 -%}
-          {% render 'cart-items', cart: cart %}
-          {% render 'cart-totals', cart: cart %}
-        {%- else -%}
-          {% render 'cart-empty' %}
-        {%- endif -%}
-      </cart-items>
+    <div class="cart-drawer-content">
+      {% render 'bundle-cart' %}
     </div>
   </div>
 </cart-drawer>
 
 <script type="module" src="{{ 'cart-drawer.js' | asset_url }}"></script>
-<script src="{{ 'cart-items.js' | asset_url }}" defer></script>
-<script src="{{ 'quantity-selector.js' | asset_url }}" defer></script>
 
 {% stylesheet %}
   .cart-drawer {
@@ -104,6 +91,14 @@
   .cart-drawer-content {
     max-height: calc(100vh - var(--header-height) - var(--spacing-l));
     overflow-y: auto;
+  }
+
+  /* The shared "Your Box" panel is itself a card on the bundle page; in the
+     island the .cart-drawer-panel is the card, so flatten the snippet chrome. */
+  .cart-drawer .bundle-cart {
+    background: transparent;
+    border-radius: 0;
+    padding: 0;
   }
 
   body.drawer-open {

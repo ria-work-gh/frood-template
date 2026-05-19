@@ -1,2 +1,5 @@
 [environments.development]
 store = "frood-tyzvbvhi"
+
+[environments.default]
+store = 'frood-world'

@@ -14,10 +14,7 @@
     "sections": {
       "cart-drawer": {
         "type": "cart-drawer",
-        "settings": {
-          "upsell_heading": "You may also like",
-          "upsell_collection": ""
-        }
+        "settings": {}
       }
     },
     "content_for_index": [],
