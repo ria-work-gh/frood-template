@@ -58,9 +58,14 @@
     {%- form 'product', product -%}
       <input type="hidden" name="id" value="{{ product.selected_or_first_available_variant.id }}">
 
-      {%- comment -%} Box 1: title + product render (media[0]) + description + buy controls {%- endcomment -%}
+      {%- comment -%} Box 1: title + price header → render → description → variants + buy {%- endcomment -%}
       <div class="product-box product-box-main">
-        <h1 class="text-h2 product-box-title">{{ product.title }}</h1>
+        <div class="product-box-header">
+          <h1 class="text-ui product-box-title">{{ product.title }}</h1>
+          <div class="product-box-price" data-variant-render="price">
+            {% render 'product-price', product: product %}
+          </div>
+        </div>
 
         {%- assign primary_media = product.media[0] -%}
         {%- if primary_media -%}
@@ -106,10 +111,6 @@
         {%- endif -%}
 
         <div class="product-box-buy">
-          <div data-variant-render="price">
-            {% render 'product-price', product: product %}
-          </div>
-
           <div class="product-variants">
             {% render 'product-variant-selector', product: product %}
           </div>
@@ -171,12 +172,13 @@
   .main-product {
     position: relative;
     min-height: calc(100svh - var(--header-height));
-    padding: var(--spacing-m);
+    padding: var(--spacing-xs);
   }
 
-  @media (max-width: 899px) {
+  @media (min-width: 900px) {
     .main-product {
-      padding: var(--spacing-xs);
+      min-height: 100vh;
+      padding: var(--spacing-m);
     }
   }
 
@@ -200,18 +202,21 @@
   }
 
   .product-bg-slider-slide {
-    flex: 0 0 100%;
-    min-width: 0;
+    flex: 0 0 auto;
     height: 100%;
   }
 
   .product-bg-slider-slide img,
-  .product-bg-slider-slide video,
+  .product-bg-slider-slide video {
+    height: 100%;
+    width: auto;
+    display: block;
+  }
+
   .product-bg-slider-slide iframe,
   .product-bg-slider-slide model-viewer {
-    width: 100%;
     height: 100%;
-    object-fit: cover;
+    width: 100vw;
     display: block;
     border: 0;
   }
