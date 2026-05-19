@@ -237,7 +237,7 @@
     background: var(--color-bg);
     color: var(--color-text);
     border-radius: var(--rad-s);
-    padding: var(--spacing-m);
+    padding: var(--spacing-xxs);
   }
 
   /* Box 1: main content stack */
@@ -247,8 +247,19 @@
     gap: var(--spacing-s);
   }
 
+  .product-box-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--spacing-s);
+  }
+
   .product-box-title {
     margin: 0;
+  }
+
+  .product-box-price {
+    flex-shrink: 0;
   }
 
   .product-box-render {
