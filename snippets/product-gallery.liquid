@@ -4,6 +4,12 @@
 
   Single media: plain render, no carousel.
   Multi-media: Embla carousel with dots (mobile) and thumbnails (desktop).
+
+  Video media renders through the `video` snippet with controls (media-chrome).
+  Any section that renders this snippet AND can contain video media must load
+  the player once:
+    <script type="module" src="{{ 'media-chrome.js' | asset_url }}"></script>
+  (Not currently rendered by any section — the PDP uses product-bg-slider.)
 {%- endcomment -%}
 
 {%- if product.media.size == 1 -%}
@@ -17,7 +23,7 @@
         height: media.height
       }}
     {%- elsif media.media_type == 'video' -%}
-      {{ media | video_tag: autoplay: false, controls: true }}
+      {% render 'video', media: media, controls: true, label: media.alt | default: product.title %}
     {%- elsif media.media_type == 'external_video' -%}
       {%- if media.host == 'youtube' -%}
         <iframe
@@ -67,7 +73,7 @@
                 height: media.height
               }}
             {%- elsif media.media_type == 'video' -%}
-              {{ media | video_tag: autoplay: false, controls: true }}
+              {% render 'video', media: media, controls: true, label: media.alt | default: product.title %}
             {%- elsif media.media_type == 'external_video' -%}
               {%- if media.host == 'youtube' -%}
                 <iframe
@@ -143,11 +149,13 @@
   }
 
   .product-gallery-single img,
-  .product-gallery-single video {
+  .product-gallery-single video,
+  .product-gallery-single media-controller {
     width: 100%;
     height: 100%;
     object-fit: cover;
     display: block;
+    --media-object-fit: cover;
   }
 
   .product-gallery-single iframe {
@@ -176,11 +184,13 @@
   }
 
   .product-gallery-slide img,
-  .product-gallery-slide video {
+  .product-gallery-slide video,
+  .product-gallery-slide media-controller {
     width: 100%;
     height: 100%;
     object-fit: cover;
     display: block;
+    --media-object-fit: cover;
   }
 
   .product-gallery-slide iframe {

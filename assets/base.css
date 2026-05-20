@@ -381,11 +381,16 @@ body {
    See CLAUDE.md "Buttons" section for the rules. */
 
 .button {
-  display: inline-flex;
-  justify-content: center;
-  align-items: center;
-  /* Asymmetric vertical padding for optical balance with the text-h1 type */
-  padding: var(--spacing-xxs) var(--spacing-xs) 7px;
+  display: inline-block;
+  text-align: center;
+  /* Symmetric vertical padding: the global text-box trim (§4) strips the
+     cap/baseline half-leading so the all-caps label is optically centred on its
+     own — same treatment as .nav-link. This relies on .button being a
+     block-level box: as inline-flex the trim silently no-ops (the label becomes
+     an anonymous flex item the `*` rule can't reach), which is why this used to
+     need a manual 8px/7px asymmetric fudge. As a flex item (e.g.
+     .buy-buttons .button) inline-block blockifies to block, which trim handles. */
+  padding: var(--spacing-xxs) var(--spacing-xs);
   background-color: var(--color-accent);
   color: var(--color-text);
   border: none;
@@ -436,6 +441,10 @@ body {
 .button.is-loading::after {
   content: "";
   position: absolute;
+  /* Centre in the button. Previously relied on the flex container's
+     static-position centring; .button is no longer flex, so centre explicitly. */
+  inset: 0;
+  margin: auto;
   width: 16px;
   height: 16px;
   border: 2px solid currentColor;
@@ -992,4 +1001,142 @@ body {
 
 .section-lockup > .button {
   margin-top: var(--spacing-s);
+}
+
+/* ========== 23. Toasts ========== */
+/* Global transient feedback. Fired via the `toast:show` event (or the
+   showToast() helper) on document; rendered by <toast-region>
+   (snippets/toast-region.liquid + assets/toast.js). Sits above the lightbox
+   (z-index 999). Mobile: bottom-center. Tablet+: bottom-right (cart-drawer side).
+
+   Sonner-style stacking: toasts are absolutely positioned at a shared bottom
+   anchor. Two layers compose without fighting over `transform` —
+   .toast-item (wrapper) holds stack lift + scale + the collapsed↔expanded fan;
+   .toast (inner) holds enter/exit motion + swipe. JS (assets/toast.js) measures
+   heights and writes the numeric custom props below; CSS animates the result. */
+
+/* Typed so calc() treats them as numbers and the expanded flip interpolates. */
+@property --ti-stack       { syntax: "<number>"; inherits: false; initial-value: 0; }
+@property --ti-index       { syntax: "<number>"; inherits: false; initial-value: 0; }
+@property --toast-shift    { syntax: "<number>"; inherits: false; initial-value: 16; }
+@property --toast-swipe    { syntax: "<number>"; inherits: false; initial-value: 0; }
+@property --toast-expanded { syntax: "<number>"; inherits: true;  initial-value: 0; }
+
+.toast-region {
+  position: fixed;
+  z-index: 1000;
+  bottom: var(--spacing-s);
+  left: var(--spacing-s);
+  right: var(--spacing-s);
+  /* A hover/focus target whose height JS sizes to the stack bounds. Children
+     are absolute, so this box never reflows the toasts themselves. */
+  pointer-events: auto;
+  --toast-gap: var(--spacing-xxs); /* read by JS for offset math */
+  --toast-peek: 14;                /* px each card peeks behind the front (collapsed) */
+  --toast-scale-step: 0.05;        /* shrink per depth (collapsed) */
+  --toast-motion: 0.3s cubic-bezier(0.21, 1.02, 0.73, 1);
+  transition: height var(--toast-motion);
+}
+
+@media (min-width: 600px) {
+  .toast-region {
+    left: auto;
+    width: 380px;
+  }
+}
+
+/* WRAPPER — stack position + scale, switched by --toast-expanded (0 → 1). */
+.toast-item {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: auto;
+  transform-origin: center top;
+  transform: translateY(
+      calc(
+        (var(--toast-expanded) * var(--ti-stack) +
+          (1 - var(--toast-expanded)) * (var(--ti-index) * var(--toast-peek))) * -1px
+      )
+    )
+    scale(
+      calc(
+        var(--toast-expanded) * 1 +
+          (1 - var(--toast-expanded)) * (1 - var(--ti-index) * var(--toast-scale-step))
+      )
+    );
+  transition: transform var(--toast-motion);
+}
+
+/* INNER — the visible card; enter/exit motion + swipe. */
+.toast {
+  pointer-events: auto;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-xs);
+  width: 100%;
+  padding: var(--spacing-xs) var(--spacing-s);
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  border-radius: var(--rad-s);
+  /* Variant accent strip — overridden per variant below. */
+  border-left: 3px solid var(--color-text);
+  box-shadow: 1px 2px 12px var(--color-border);
+  /* Vertical drag scrolls the page natively; we own horizontal (swipe). */
+  touch-action: pan-y;
+
+  opacity: 0;
+  transform: translate(calc(var(--toast-swipe) * 1px), calc(var(--toast-shift) * 1px));
+  transition:
+    opacity var(--toast-motion),
+    transform var(--toast-motion);
+}
+
+.toast.is-visible {
+  opacity: 1;
+  --toast-shift: 0;
+}
+
+.toast.is-leaving {
+  opacity: 0;
+  --toast-shift: 12;
+  pointer-events: none;
+}
+
+/* While dragging, track the finger 1:1 — the spring-back/fling re-enables it. */
+.toast.is-swiping {
+  transition: none;
+}
+
+/* Generic success/error colors — recognizable, intentionally not brand tokens.
+   Matches the hardcoded #16a34a / #dc2626 used by form-success / form-error. */
+.toast-success {
+  border-left-color: #16a34a;
+}
+
+.toast-error {
+  border-left-color: #dc2626;
+}
+
+.toast-info {
+  border-left-color: var(--color-text);
+}
+
+.toast-message {
+  flex: 1;
+  font-size: var(--type-ui-size);
+  line-height: var(--type-ui-height);
+  font-weight: var(--type-ui-weight);
+  /* Optical nudge so the text baseline aligns with the close icon. */
+  padding-top: 2px;
+}
+
+.toast-close {
+  flex-shrink: 0;
+  color: var(--color-text-light);
+  transition: color var(--transition-fast);
+}
+
+.toast-close:hover {
+  color: var(--color-text);
 }

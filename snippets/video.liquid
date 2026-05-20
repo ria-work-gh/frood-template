@@ -1,0 +1,121 @@
+{%- comment -%}
+  video — renders a Shopify-hosted video, optionally with a branded media-chrome
+  player UI. Single video abstraction so every controlled video on the site
+  shares one control bar and theming.
+
+  Two modes:
+    controls: true  → wraps the <video> in media-chrome (<media-controller> +
+                      Frood-themed <media-control-bar>). The host SECTION must
+                      load assets/media-chrome.js once:
+                        <script type="module" src="{{ 'media-chrome.js' | asset_url }}"></script>
+    controls: false → bare <video> with NO player chrome (decorative
+                      autoplay/loop). This is how a controls-hidden video stays
+                      chrome-free while routing through the same snippet.
+
+  Accepts (defaults in parens):
+    media       (required)  Shopify video object — a product media item OR a
+                            video metafield's `.value`. Must expose `.sources`.
+    controls    (false)     Render the media-chrome control bar.
+    autoplay    (false)
+    loop        (false)
+    muted       (false)
+    playsinline (true)
+    preload     ('metadata')
+    poster      (media.preview_image)  Pass `false` to omit the poster.
+    label       (media.alt)            aria-label for the player.
+    class       ('')                   Extra class applied to the <video>.
+
+  Contract: the rendered <video> is always a real HTMLVideoElement in light DOM
+  (it is slotted into <media-controller> when controls:true, not moved into a
+  shadow root). So `container.querySelector('video')` resolves it in BOTH modes
+  — relied on by product-gallery.js (pause on slide leave) and recipe-modal.js
+  (play / pause / currentTime reset). The control bar reflects play/seek/mute
+  state automatically because it observes that same element.
+{%- endcomment -%}
+
+{%- liquid
+  if playsinline == nil
+    assign playsinline = true
+  endif
+  assign preload = preload | default: 'metadata'
+  if poster == nil
+    assign poster_url = media.preview_image | image_url: width: 1200
+  elsif poster
+    assign poster_url = poster
+  endif
+  assign label = label | default: media.alt
+-%}
+
+{%- capture video_el -%}
+  <video
+    slot="media"
+    {% if class != blank %}class="{{ class }}"{% endif %}
+    {% if autoplay %}autoplay{% endif %}
+    {% if loop %}loop{% endif %}
+    {% if muted %}muted{% endif %}
+    {% if playsinline %}playsinline{% endif %}
+    preload="{{ preload }}"
+    {% if poster_url %}poster="{{ poster_url }}"{% endif %}
+    {% if label != blank %}aria-label="{{ label | escape }}"{% endif %}
+  >
+    {%- for source in media.sources -%}
+      <source src="{{ source.url }}" type="{{ source.mime_type }}">
+    {%- endfor -%}
+  </video>
+{%- endcapture -%}
+
+{%- if controls -%}
+  <media-controller class="frood-video"{% if label != blank %} aria-label="{{ label | escape }}"{% endif %}>
+    {{ video_el }}
+    <media-control-bar>
+      <media-play-button></media-play-button>
+      <media-time-display></media-time-display>
+      <media-time-range></media-time-range>
+      <media-duration-display></media-duration-display>
+      <media-mute-button></media-mute-button>
+      <media-fullscreen-button></media-fullscreen-button>
+    </media-control-bar>
+  </media-controller>
+{%- else -%}
+  {{ video_el }}
+{%- endif -%}
+
+{% stylesheet %}
+  /* media-chrome theming — maps the player's CSS vars onto Frood tokens.
+     A frosted beige control bar with dark-burgundy controls + pale-yellow
+     hover. media-chrome controls live in shadow DOM, so they are styled only
+     via these documented custom properties (not the theme's usual selectors). */
+  .frood-video {
+    display: block;
+    width: 100%;
+    height: 100%;
+    /* Beige (not the player default #000) so loading / letterbox areas match
+       the brand frame instead of flashing black. */
+    --media-background-color: var(--color-bg-dark);
+    --media-font-family: 'HW Left', sans-serif;
+    --media-font-size: 14px;
+    --media-primary-color: var(--color-text);
+    --media-secondary-color: transparent;
+    --media-control-hover-background: var(--color-accent-light);
+    --media-focus-box-shadow: 0 0 0 2px var(--color-text);
+    --media-range-bar-color: var(--color-text);
+    --media-range-track-background: var(--color-border);
+    --media-range-thumb-background: var(--color-text);
+  }
+
+  /* The control bar overlays the <video>. A backdrop-filter here forces the
+     video onto a GPU compositing path that renders black on some hardware
+     (fine in software/headless, broken on real GPUs). Use a translucent
+     beige fill instead — no backdrop-filter directly over video. */
+  .frood-video media-control-bar {
+    background: var(--color-nav);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .frood-video {
+      --media-control-transition-in: none;
+      --media-control-transition-out: none;
+      --media-range-thumb-transition: none;
+    }
+  }
+{% endstylesheet %}

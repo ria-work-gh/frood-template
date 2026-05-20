@@ -10,6 +10,9 @@
   (Tighter grid than products since recipe cards carry more written content.)
 {%- endcomment -%}
 
+<script type="module" src="{{ 'media-chrome.js' | asset_url }}"></script>
+<script type="module" src="{{ 'recipe-modal.js' | asset_url }}"></script>
+
 <section class="recipes-index color-{{ section.settings.color_scheme }}">
   <header class="recipes-index-header section-lockup">
     {%- if section.settings.eyebrow != blank -%}

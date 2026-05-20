@@ -278,9 +278,15 @@
     z-index: 2;
   }
 
+  /* The ADD button is nested two levels deep (custom element → form → button)
+     while VIEW is a direct flex child of .product-card-actions. Left as block,
+     the button would sit in a line box (baseline-aligned, with strut/descender
+     space) and land a couple of px off from VIEW. Making the wrapper and form
+     flex containers lets the button stretch through the chain to the same
+     cross-size as VIEW, so the two align exactly. */
   .product-card-actions product-card-quick-add,
   .product-card-actions product-card-quick-add form {
-    display: block;
+    display: flex;
   }
 
   /* Each child gets the nav-item-in motion: small slide down + fade. Hidden
