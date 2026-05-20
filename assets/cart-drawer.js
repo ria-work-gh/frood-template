@@ -61,8 +61,22 @@ class CartDrawer extends HTMLElement {
 
   // ---- Rendering --------------------------------------------------------
 
+<<<<<<< HEAD
   render() {
     if (this.panel) renderBundleCart(this.panel, bundleStore.snapshot);
+=======
+  // Swap the drawer body with the [data-drawer-body] content from a fresh
+  // server-rendered cart-drawer section. `html` is the raw section string
+  // from Shopify's Section Rendering API.
+  refresh(html) {
+    if (!html || !this.body) return;
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    const fresh = doc.querySelector('[data-drawer-body]');
+    if (fresh) this.body.innerHTML = fresh.innerHTML;
+    // Public hook — bubbles to `document`, no detail. No internal listener;
+    // an extension point for analytics/integrations to re-init after a swap.
+    this.dispatchEvent(new CustomEvent('content:loaded', { bubbles: true }));
+>>>>>>> 7f5b741 (Document content:loaded + recipe-modal:* as public extension-point events)
   }
 
   // ---- Events -----------------------------------------------------------

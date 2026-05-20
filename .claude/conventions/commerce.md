@@ -66,7 +66,7 @@ The cart drawer uses Shopify's Section Rendering API to update its contents:
 - On `cart:updated`: reads pre-rendered HTML from `event.detail.sections`
 - On `cart:item-added`: fetches `/cart?section_id=cart-drawer` (standalone fetch)
 - Swaps `innerHTML` of the drawer body with the new server-rendered content
-- Dispatches `content:loaded` after swap for any re-initialization
+- Dispatches `content:loaded` (bubbles, no detail) after swap — a public extension-point hook with **no internal listener** (analytics / re-initialization)
 
 ---
 
