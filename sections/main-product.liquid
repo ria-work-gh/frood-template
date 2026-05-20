@@ -2,9 +2,9 @@
   {% render 'json-ld-product', product: product %}
 
   {%- comment -%}
-    Background slider: product.media from index 2 onwards. The product render
-    video inside Box 1 comes from the `custom.product_render_video` metafield,
-    not from product.media. The first two media entries remain reserved per spec.
+    Background slider: product.media from index 2 onwards (the first two
+    media entries are reserved — media[0] is rendered inside Box 1 as the
+    product render; media[1] is currently unused but kept reserved per spec).
   {%- endcomment -%}
   {%- if product.media.size > 2 -%}
     <product-bg-slider class="product-bg-slider" aria-hidden="true">
@@ -50,7 +50,7 @@
     </product-bg-slider>
   {%- endif -%}
 
-  <product-form class="product-boxes" data-section-id="{{ section.id }}" data-added-message="{{ 'products.product.added_to_cart' | t }}">
+  <product-form class="product-boxes" data-section-id="{{ section.id }}">
     <script type="application/json" class="product-json">
       {{ product | json }}
     </script>
@@ -60,33 +60,62 @@
 
       {%- comment -%} Box 1: title + product render (media[0]) + description + buy controls {%- endcomment -%}
       <div class="product-box product-box-main">
-        <div class="product-box-header">
-          <h1 class="text-h3 product-box-title">{{ product.title }}</h1>
-          <div class="text-h1 product-box-pack-size">(4 pack)</div>
-        </div>
+        <h1 class="text-h2 product-box-title">{{ product.title }}</h1>
 
-        {%- assign render_video = product.metafields.custom.product_render_video.value -%}
-        {%- if render_video != blank or product.description != blank -%}
-          <div class="product-box-body">
-            {%- if render_video != blank -%}
-              <div class="product-box-render">
-                <product-render-video>
-                  {{ render_video | video_tag: autoplay: true, muted: true, controls: false, playsinline: true }}
-                </product-render-video>
-              </div>
-            {%- endif -%}
+        {%- assign primary_media = product.media[0] -%}
+        {%- if primary_media -%}
+          <div class="product-box-render">
+            {%- case primary_media.media_type -%}
+              {%- when 'image' -%}
+                {{ primary_media | image_url: width: 1200 | image_tag:
+                  loading: 'eager',
+                  alt: primary_media.alt | default: product.title,
+                  width: primary_media.width,
+                  height: primary_media.height
+                }}
+              {%- when 'video' -%}
+                {{ primary_media | video_tag: autoplay: true, loop: true, muted: true, controls: false, playsinline: true }}
+              {%- when 'external_video' -%}
+                {%- if primary_media.host == 'youtube' -%}
+                  <iframe
+                    src="https://www.youtube.com/embed/{{ primary_media.external_id }}?autoplay=1&mute=1&loop=1&controls=0&playlist={{ primary_media.external_id }}"
+                    allow="autoplay; encrypted-media"
+                    allowfullscreen
+                    loading="lazy"
+                    title="{{ product.title }}"
+                  ></iframe>
+                {%- elsif primary_media.host == 'vimeo' -%}
+                  <iframe
+                    src="https://player.vimeo.com/video/{{ primary_media.external_id }}?autoplay=1&muted=1&loop=1&controls=0"
+                    allow="autoplay; encrypted-media"
+                    allowfullscreen
+                    loading="lazy"
+                    title="{{ product.title }}"
+                  ></iframe>
+                {%- endif -%}
+              {%- when 'model' -%}
+                {{ primary_media | model_viewer_tag }}
+            {%- endcase -%}
+          </div>
+        {%- endif -%}
 
-            {%- if product.description != blank -%}
-              <div class="product-box-description typeset">
-                {{ product.description }}
-              </div>
-            {%- endif -%}
+        {%- if product.description != blank -%}
+          <div class="product-box-description typeset">
+            {{ product.description }}
           </div>
         {%- endif -%}
 
         <div class="product-box-buy">
+          <div data-variant-render="price">
+            {% render 'product-price', product: product %}
+          </div>
+
           <div class="product-variants">
             {% render 'product-variant-selector', product: product %}
+          </div>
+
+          <div data-variant-render="buy-buttons">
+            {% render 'product-buy-buttons', product: product, show_quantity: section.settings.show_quantity %}
           </div>
         </div>
       </div>
@@ -96,13 +125,10 @@
         <details class="product-box product-accordion">
           <summary>
             <span class="text-ui">{{ 'products.product.instructions' | t }}</span>
-            <span class="product-accordion-icon" aria-hidden="true">
-            {% render 'icon-add' %}
-            {% render 'icon-remove' %}
-          </span>
+            <span class="product-accordion-icon" aria-hidden="true">+</span>
           </summary>
           <div class="product-accordion-content typeset">
-            {{ product.metafields.custom.instructions | metafield_tag }}
+            {{ product.metafields.custom.instructions }}
           </div>
         </details>
       {%- endif -%}
@@ -112,13 +138,10 @@
         <details class="product-box product-accordion">
           <summary>
             <span class="text-ui">{{ 'products.product.ingredients' | t }}</span>
-            <span class="product-accordion-icon" aria-hidden="true">
-            {% render 'icon-add' %}
-            {% render 'icon-remove' %}
-          </span>
+            <span class="product-accordion-icon" aria-hidden="true">+</span>
           </summary>
           <div class="product-accordion-content typeset">
-            {{ product.metafields.custom.ingredients | metafield_tag }}
+            {{ product.metafields.custom.ingredients }}
           </div>
         </details>
       {%- endif -%}
@@ -128,24 +151,13 @@
         <details class="product-box product-accordion">
           <summary>
             <span class="text-ui">{{ 'products.product.nutritional_info' | t }}</span>
-            <span class="product-accordion-icon" aria-hidden="true">
-            {% render 'icon-add' %}
-            {% render 'icon-remove' %}
-          </span>
+            <span class="product-accordion-icon" aria-hidden="true">+</span>
           </summary>
           <div class="product-accordion-content typeset">
-            {{ product.metafields.custom.nutritional_info | metafield_tag }}
+            {{ product.metafields.custom.nutritional_info }}
           </div>
         </details>
       {%- endif -%}
-
-      {%- comment -%} Buy dock: sits under all the content boxes, sticks through
-         the product-recommendations section via the wrapping custom element. {%- endcomment -%}
-      <sticky-buy-dock class="sticky-buy-dock">
-        <div class="product-buy-dock" data-variant-render="buy-buttons">
-          {% render 'product-buy-buttons', product: product, show_quantity: section.settings.show_quantity %}
-        </div>
-      </sticky-buy-dock>
     {%- endform -%}
   </product-form>
 </section>
@@ -154,31 +166,17 @@
 <script src="{{ 'embla-carousel.umd.js' | asset_url }}" defer></script>
 <script src="{{ 'product-bg-slider.js' | asset_url }}" defer></script>
 <script src="{{ 'quantity-selector.js' | asset_url }}" defer></script>
-<script src="{{ 'product-render-video.js' | asset_url }}" defer></script>
-<script src="{{ 'sticky-buy-dock.js' | asset_url }}" defer></script>
 
 {% stylesheet %}
   .main-product {
     position: relative;
     min-height: calc(100svh - var(--header-height));
-    padding: var(--spacing-xxs);
-    display: flex;
-    flex-direction: column;
+    padding: var(--spacing-m);
   }
 
-  @media (min-width: 900px) {
+  @media (max-width: 899px) {
     .main-product {
-      height: 100vh;
-      min-height: 0;
-    }
-  }
-
-  /* Mobile (<600px): section flows naturally — slider sits at the top,
-     boxes stack underneath. Slider is taken out of position:absolute and
-     given a 1:1 box so it has measurable height. */
-  @media (max-width: 599px) {
-    .main-product {
-      min-height: 0;
+      padding: var(--spacing-xs);
     }
   }
 
@@ -189,18 +187,6 @@
     z-index: 0;
     display: block;
     overflow: hidden;
-  }
-
-  @media (max-width: 599px) {
-    .product-bg-slider {
-      position: relative;
-      inset: auto;
-      height: 75vh;
-      /* Bleed past the section's xxs padding on the sides so the slider is
-         edge-to-edge horizontally. Top keeps the section's xxs padding for
-         breathing room; bottom flows into the boxes below. */
-      margin-inline: calc(-1 * var(--spacing-xxs));
-    }
   }
 
   .product-bg-slider-viewport {
@@ -230,122 +216,29 @@
     border: 0;
   }
 
-  @media (min-width: 900px) {
-    .product-bg-slider-slide {
-      flex: 0 0 auto;
-      width: auto;
-    }
-
-    .product-bg-slider-slide img,
-    .product-bg-slider-slide video,
-    .product-bg-slider-slide iframe,
-    .product-bg-slider-slide model-viewer {
-      width: auto;
-      height: 100%;
-      object-fit: contain;
-    }
-  }
-
-  /* Boxes column — left-aligned, stacked, sits on top of slider. Stretches
-     to fill the section so the buy-dock has room to sticky-scroll.
-     z-index: 3 lifts the whole column above later-in-DOM section overlays
-     (e.g. fullbleed-frame::after at z-index 1, fullbleed-caption at z-index 2)
-     so the sticky dock stays visible when scrolling past those sections.
-     Still below header (z-index 9) and footer (z-index 10). */
+  /* Boxes column — left-aligned, stacked, sits on top of slider */
   .product-boxes {
     position: relative;
-    z-index: 3;
+    z-index: 1;
     display: flex;
     flex-direction: column;
-    gap: var(--spacing-xxxs);
+    gap: var(--spacing-s);
     max-width: 480px;
     width: 100%;
-    flex: 1;
-    min-height: 0;
-  }
-
-  /* Desktop collision-avoidance with the centered .header-nav (max-width: 400px).
-     Nav left edge sits at (100vw - 400px) / 2. The column's right edge can't cross
-     that line, so we cap its max-width to that gap minus the section's left
-     padding (xxs) and a breathing gap of m (24px) between the column and the nav.
-     Above ~1424px the cap hits the 480px ceiling — same as before. Below that,
-     the column shrinks proportionally. */
-  @media (min-width: 900px) {
-    .product-boxes {
-      max-width: min(480px, calc((100vw - 400px) / 2 - var(--spacing-xxs) - var(--spacing-m)));
-    }
-  }
-
-  /* The Shopify {% form %} wraps the boxes — make it pass flex through
-     and fill .product-boxes so the buy-dock's containing block extends
-     to the section's bottom edge */
-  .product-boxes form {
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-xxxs);
-    flex: 1;
-    min-height: 0;
   }
 
   /* Shared box treatment — solid panel with brand bg */
   .product-box {
-    background: var(--color-bg-dark);
+    background: var(--color-bg);
     color: var(--color-text);
     border-radius: var(--rad-s);
-    padding: var(--spacing-xs);
+    padding: var(--spacing-m);
   }
 
-  /* Box 1: main content stack — uniform spacing between children EXCEPT
-     the last child (the buy/variants block), which sits flush against
-     the box's bottom padding. */
+  /* Box 1: main content stack */
   .product-box-main {
     display: flex;
     flex-direction: column;
-  }
-
-  .product-box-main > * + * {
-    margin-top: var(--spacing-s);
-  }
-
-  .product-box-main > :last-child {
-    margin-top: 0;
-  }
-
-  /* Render + description wrapper. Stacked by default; flexes side-by-side
-     on tablet (see tablet rules below). Sits between header and buy inside
-     .product-box-main. */
-  .product-box-body {
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-s);
-  }
-
-  /* Tablet (600–899px): boxes column is 64% wide, anchored bottom-left of
-     the section; render + description sit side-by-side inside box 1. */
-  @media (min-width: 600px) and (max-width: 899px) {
-    .product-boxes {
-      max-width: none;
-      width: 64%;
-      flex: 0 0 auto;
-      align-self: flex-start;
-      margin-top: auto;
-    }
-
-    .product-box-body {
-      flex-direction: row;
-      align-items: flex-start;
-    }
-
-    .product-box-body > * {
-      flex: 1;
-      min-width: 0;
-    }
-  }
-
-  .product-box-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
     gap: var(--spacing-s);
   }
 
@@ -353,26 +246,16 @@
     margin: 0;
   }
 
-  /* Price sits in the header — force brand text colour, ignoring
-     the snippet's default .text-light treatment */
-  .product-box-price,
-  .product-box-price * {
-    color: var(--color-text);
-  }
-
   .product-box-render {
     width: 100%;
-    aspect-ratio: 3 / 4;
+    aspect-ratio: 1 / 1;
     overflow: hidden;
     border-radius: var(--rad-s);
     background: var(--color-bg-dark);
-    display: flex;
-    align-items: center;
-    justify-content: center;
   }
 
-  /* Images/iframes/3D models still fill the box edge-to-edge */
   .product-box-render img,
+  .product-box-render video,
   .product-box-render iframe,
   .product-box-render model-viewer {
     width: 100%;
@@ -382,20 +265,8 @@
     border: 0;
   }
 
-  /* Product render video scales down to 85% of the box, centered by the
-     flex parent. The <video> inside the wrapper fills the wrapper 100%. */
-  .product-box-render product-render-video {
-    display: block;
-    width: 85%;
-    height: 85%;
-  }
-
-  .product-box-render product-render-video video {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
-    border: 0;
+  .product-box-description {
+    margin: 0;
   }
 
   .product-box-buy {
@@ -430,9 +301,6 @@
   /* Accordion boxes (Instructions / Ingredients / Nutritional info) */
   .product-accordion {
     padding: 0;
-    /* Lets ::details-content animate to/from `auto` height. Modern browsers
-       only; older browsers fall back to instant open/close. */
-    interpolate-size: allow-keywords;
   }
 
   .product-accordion summary {
@@ -440,7 +308,7 @@
     justify-content: space-between;
     align-items: center;
     cursor: pointer;
-    padding: var(--spacing-xs);
+    padding: var(--spacing-s) var(--spacing-m);
     list-style: none;
   }
 
@@ -449,143 +317,16 @@
   }
 
   .product-accordion-icon {
-    position: relative;
-    display: inline-flex;
-    align-items: center;
     flex-shrink: 0;
-    width: var(--type-ui-size);
-    height: var(--type-ui-size);
+    transition: transform var(--transition-fast);
   }
 
-  /* Stack add/remove on top of each other and crossfade between them.
-     Replaces the previous display:none swap (which was instant + non-animatable). */
-  .product-accordion-icon svg {
-    position: absolute;
-    inset: 0;
-    display: block;
-    width: 100%;
-    height: 100%;
-    transition: opacity var(--transition-fast);
-  }
-
-  .product-accordion-icon svg:nth-child(2) {
-    opacity: 0;
-  }
-
-  .product-accordion[open] .product-accordion-icon svg:nth-child(1) {
-    opacity: 0;
-  }
-
-  .product-accordion[open] .product-accordion-icon svg:nth-child(2) {
-    opacity: 1;
-  }
-
-  /* Animate the open/close. ::details-content is the wrapper around everything
-     inside <details> except <summary>. block-size animates 0 → auto thanks to
-     interpolate-size on the parent. content-visibility with allow-discrete
-     keeps the content rendered during the close animation, then hides it. */
-  .product-accordion::details-content {
-    block-size: 0;
-    overflow: clip;
-    transition:
-      block-size var(--transition-fast),
-      content-visibility var(--transition-fast) allow-discrete;
-  }
-
-  .product-accordion[open]::details-content {
-    block-size: auto;
+  .product-accordion[open] .product-accordion-icon {
+    transform: rotate(45deg);
   }
 
   .product-accordion-content {
-    padding: var(--spacing-s) var(--spacing-xs) var(--spacing-xs);
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .product-accordion::details-content,
-    .product-accordion-icon svg {
-      transition: none;
-    }
-  }
-
-  /* Buy dock — sits beneath all content boxes. The <sticky-buy-dock>
-     wrapper (assets/sticky-buy-dock.js) extends the sticky range past
-     the section boundary: it pins the dock at top: var(--header-height)
-     while .product-recommendations is in view, and releases it after
-     recommendations has scrolled past. CSS sticky here is the no-JS
-     fallback — it still pins through the main-product section. */
-  sticky-buy-dock {
-    display: block;
-  }
-
-  .product-buy-dock {
-    padding: 0;
-  }
-
-  /* Sticky behavior only on desktop (≥900px). Below that the dock just
-     sits at the bottom of the column in normal flow. */
-  @media (min-width: 900px) {
-    .product-buy-dock {
-      position: sticky;
-      top: var(--spacing-xxs);
-      z-index: 2;
-    }
-  }
-
-  /* Quantity selector in the PDP buy dock — restyled to match the
-     bg-dark content boxes (no border, no inner dividers). The inner
-     button padding alone matches the accordion summary's xxs padding,
-     so the wrapper itself has no padding — keeps total height equal
-     to the dropdown toggles above. */
-  .product-buy-dock .quantity-selector {
-    background-color: var(--color-bg-dark);
-    border: 0;
-    padding: 0;
-  }
-
-  .product-buy-dock .quantity-selector button {
-    padding: var(--spacing-xs);
-    width: auto;
-  }
-
-  .product-buy-dock .quantity-selector button svg {
-    width: 10px;
-    height: 10px;
-  }
-
-  .product-buy-dock .quantity-selector input {
-    background-color: transparent;
-    border-left: 0;
-    border-right: 0;
-    padding: 0 var(--spacing-xxs);
-    width: 3em;
-  }
-
-  /* Qty selector + add-to-cart sit side-by-side, span the box width
-     with a tight xxxs gap. Add-to-cart uses .text-ui typography
-     (overriding the brand .button's default text-h1 style for this
-     context). */
-  .product-buy-dock .buy-buttons {
-    gap: var(--spacing-xxxs);
-  }
-
-  .product-buy-dock .buy-buttons quantity-selector {
-    display: flex;
-    flex-shrink: 0;
-  }
-
-  .product-buy-dock .buy-buttons quantity-selector .quantity-selector {
-    height: 100%;
-  }
-
-  .product-buy-dock .button {
-    padding: var(--spacing-xs);
-    justify-content: space-between;
-    gap: var(--spacing-s);
-    font-size: var(--type-ui-size);
-    font-weight: 500;
-    line-height: 1.2em;
-    letter-spacing: 0;
-    text-transform: none;
+    padding: 0 var(--spacing-m) var(--spacing-s);
   }
 
   product-form.is-loading [data-variant-render] {

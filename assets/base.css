@@ -243,14 +243,6 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Global text-box trim: strips the half-leading above the cap line and below
-   the alphabetic baseline so text sits flush in its container. Drives the
-   tight, optically-correct vertical rhythm we get in Figma. Quietly ignored
-   by browsers that don't support text-box (Firefox at the moment). */
-* {
-  text-box: trim-both cap alphabetic;
-}
-
 /* ========== 5. Typography Utilities ========== */
 
 .text-mini {
@@ -361,24 +353,6 @@ body {
 .typeset h3:not(:first-child),
 .typeset h4:not(:first-child) {
   margin-top: 2em;
-}
-
-/* Lists inside any rich-text wrapper — strip browser indent and put the
-   marker inside the content box so the list aligns flush-left with the
-   surrounding prose. Applies to both ordered and unordered lists. */
-.typeset ul,
-.typeset ol,
-.text-body ul,
-.text-body ol {
-  margin-block-start: 0;
-  margin-block-end: 0;
-  padding-inline-start: 0;
-  list-style-position: inside;
-}
-
-.typeset li + li,
-.text-body li + li {
-  margin-top: var(--spacing-xxxs);
 }
 
 /* Any <a> inside a richtext-bearing wrapper (.typeset for long-form prose,
@@ -751,7 +725,7 @@ body {
   }
 }
 
-@media (min-width: 1500px) {
+@media (min-width: 1200px) {
   .grid-4 {
     grid-template-columns: repeat(4, 1fr);
   }
@@ -867,13 +841,6 @@ body {
   /* font-size: 18px;
   line-height: 1; */
   transition: transform 0.2s ease;
-}
-
-.quantity-selector button svg {
-  display: block;
-  width: var(--type-ui-size);
-  height: var(--type-ui-size);
-  margin: 0 auto;
 }
 
 .quantity-selector button:hover {
@@ -1025,97 +992,4 @@ body {
 
 .section-lockup > .button {
   margin-top: var(--spacing-s);
-}
-
-/* ========== 23. Toasts ========== */
-/* Global transient feedback. Fired via the `toast:show` event (or the
-   showToast() helper) on document; rendered by <toast-region>
-   (snippets/toast-region.liquid + assets/toast.js). Sits above the lightbox
-   (z-index 999). Mobile: bottom-center. Tablet+: bottom-right (cart-drawer side). */
-
-.toast-region {
-  position: fixed;
-  z-index: 1000;
-  bottom: var(--spacing-s);
-  left: var(--spacing-s);
-  right: var(--spacing-s);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--spacing-xxs);
-  /* Let clicks fall through the region's gaps; individual toasts re-enable. */
-  pointer-events: none;
-}
-
-@media (min-width: 600px) {
-  .toast-region {
-    left: auto;
-    align-items: flex-end;
-    max-width: 380px;
-  }
-}
-
-.toast {
-  pointer-events: auto;
-  display: flex;
-  align-items: flex-start;
-  gap: var(--spacing-xs);
-  width: 100%;
-  max-width: 380px;
-  padding: var(--spacing-xs) var(--spacing-s);
-  background-color: var(--color-bg);
-  color: var(--color-text);
-  border-radius: var(--rad-s);
-  /* Variant accent strip — overridden per variant below. */
-  border-left: 3px solid var(--color-text);
-  box-shadow: 1px 2px 12px var(--color-border);
-
-  opacity: 0;
-  transform: translateY(8px);
-  transition:
-    opacity var(--transition-fast),
-    transform var(--transition-fast);
-}
-
-.toast.is-visible {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-.toast.is-leaving {
-  opacity: 0;
-  transform: translateY(8px);
-}
-
-/* Generic success/error colors — recognizable, intentionally not brand tokens.
-   Matches the hardcoded #16a34a / #dc2626 used by form-success / form-error. */
-.toast-success {
-  border-left-color: #16a34a;
-}
-
-.toast-error {
-  border-left-color: #dc2626;
-}
-
-.toast-info {
-  border-left-color: var(--color-text);
-}
-
-.toast-message {
-  flex: 1;
-  font-size: var(--type-ui-size);
-  line-height: var(--type-ui-height);
-  font-weight: var(--type-ui-weight);
-  /* Optical nudge so the text baseline aligns with the close icon. */
-  padding-top: 2px;
-}
-
-.toast-close {
-  flex-shrink: 0;
-  color: var(--color-text-light);
-  transition: color var(--transition-fast);
-}
-
-.toast-close:hover {
-  color: var(--color-text);
 }

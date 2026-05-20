@@ -1,11 +1,12 @@
 {%- comment -%}
   Placeholder Recipe Card — owned by sections/main-recipes.liquid.
-  Clicking a card opens an inline <recipe-modal> with the recipe video.
-  Expects: recipe (metaobject) with handles: name, image, duration, description, video
+  Card design is deliberately minimal for now (image + name + duration).
+  Full card treatment (typography pairings, hover state, badges) lands later.
+  Expects: recipe (metaobject)
 {%- endcomment -%}
 
-<recipe-modal class="recipe-card">
-  <button type="button" class="recipe-card-link" aria-haspopup="dialog">
+<article class="recipe-card">
+  <a href="{{ recipe.system.url }}" class="recipe-card-link">
     <div class="recipe-card-image">
       {%- if recipe.image != blank -%}
         {{
@@ -23,49 +24,22 @@
     </div>
 
     <div class="recipe-card-info">
-      <div class="recipe-card-title-row">
-        <h3 class="text-ui recipe-card-name">{{ recipe.name }}</h3>
-        {%- if recipe.duration != blank -%}
-          <p class="text-h1 recipe-card-duration">{{ recipe.duration }}</p>
-        {%- endif -%}
-      </div>
-      {%- if recipe.description != blank -%}
-        <div class="text-body recipe-card-description">
-          {{ recipe.description | metafield_tag }}
-        </div>
+      <h3 class="text-h3 recipe-card-name">{{ recipe.name }}</h3>
+      {%- if recipe.duration != blank -%}
+        <p class="text-ui recipe-card-duration">{{ recipe.duration }}</p>
       {%- endif -%}
     </div>
-  </button>
-
-  <div class="recipe-modal" role="dialog" aria-modal="true" aria-label="{{ recipe.name | escape }}" hidden>
-    <div class="recipe-modal-inner">
-      <button type="button" class="recipe-modal-close text-h1">
-        {{ 'recipes.modal.close' | t }}
-      </button>
-
-      {%- assign recipe_video = recipe.video.value -%}
-      <div class="recipe-modal-video">
-        {%- if recipe_video != blank -%}
-          {{ recipe_video | video_tag: autoplay: true, loop: true, controls: true, playsinline: true }}
-        {%- endif -%}
-      </div>
-    </div>
-  </div>
-</recipe-modal>
+  </a>
+</article>
 
 {% stylesheet %}
   .recipe-card-link {
-    width: 100%;
-    display: flex;
-    flex-direction: row;
-    align-items: center;
+    display: grid;
     gap: var(--spacing-s);
-    text-align: left;
   }
 
   .recipe-card-image {
-    flex: 0 0 50%;
-    aspect-ratio: 1 / 1;
+    aspect-ratio: 4 / 5;
     overflow: hidden;
     background-color: var(--color-bg-dark);
     border-radius: var(--rad-s);
@@ -84,56 +58,11 @@
   }
 
   .recipe-card-info {
-    flex: 1 1 auto;
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    gap: var(--spacing-xs);
+    display: grid;
+    gap: var(--spacing-xxs);
   }
 
-  .recipe-card-title-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    gap: var(--spacing-xs);
-  }
-
-  .recipe-modal {
-    position: fixed;
-    inset: 0;
-    z-index: 999;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: var(--spacing-m);
-    background-color: var(--color-overlay);
-    backdrop-filter: blur(var(--blur));
-    -webkit-backdrop-filter: blur(var(--blur));
-  }
-
-  .recipe-modal[hidden] {
-    display: none;
-  }
-
-  .recipe-modal-inner {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: var(--spacing-s);
-  }
-
-  .recipe-modal-video {
-    padding: var(--spacing-xs);
-    background-color: var(--color-bg-dark);
-    border-radius: var(--rad-s);
-  }
-
-  .recipe-modal-video video,
-  .recipe-modal-video iframe {
-    display: block;
-    height: 85vh;
-    width: auto;
-    max-width: 100%;
-    border-radius: var(--rad-s);
+  .recipe-card-duration {
+    color: var(--color-text-accent);
   }
 {% endstylesheet %}

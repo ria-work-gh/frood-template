@@ -1,56 +1,31 @@
-{%- comment -%}
-  Product source priority:
-    1. Shopify's recommendations (intent=related) when performed AND it returned
-       enough products to fill the grid. Sparse responses (the common case for
-       new PDPs, draft themes, or low-traffic stores) fall through to the
-       collection so the grid isn't half-empty.
-    2. Merchant-selected fallback collection
-    3. collections.all
-  The current product is always excluded.
-{%- endcomment -%}
-{%- assign target_count = section.settings.products_to_show -%}
-{%- if recommendations.performed? and recommendations.products_count >= target_count -%}
-  {%- assign source_products = recommendations.products -%}
-{%- elsif section.settings.fallback_collection != blank -%}
-  {%- assign source_products = section.settings.fallback_collection.products -%}
-{%- else -%}
-  {%- assign source_products = collections.all.products -%}
-{%- endif -%}
-
 <product-recommendations
   class="product-recommendations color-{{ section.settings.color_scheme }}"
   data-url="{{ routes.product_recommendations_url }}?section_id={{ section.id }}&product_id={{ product.id }}&limit={{ section.settings.products_to_show }}&intent=related"
 >
-  <header class="product-recommendations-header section-lockup">
-    {%- if section.settings.eyebrow != blank -%}
-      <h2 class="text-h1">{{ section.settings.eyebrow }}</h2>
-    {%- endif -%}
-
-    {%- if section.settings.heading != blank -%}
-      <h3 class="text-h3">{{ section.settings.heading | newline_to_br }}</h3>
-    {%- endif -%}
-
-    {%- if section.settings.button_text != blank -%}
-      <a
-        class="button"
-        href="{{ section.settings.button_link | default: '#' }}"
-      >
-        {{ section.settings.button_text }}
-      </a>
-    {%- endif -%}
-  </header>
-
-  {%- assign exclude_id = section.settings.exclude_product.id -%}
-  <div class="product-recommendations-products mobile-{{ section.settings.mobile_layout }}">
-    {%- assign rendered = 0 -%}
-    {%- for source_product in source_products -%}
-      {%- if rendered >= section.settings.products_to_show -%}{%- break -%}{%- endif -%}
-      {%- if source_product.id != product.id and source_product.id != exclude_id -%}
-        {% render 'product-card', product: source_product %}
-        {%- assign rendered = rendered | plus: 1 -%}
+  {%- if recommendations.performed? -%}
+    {%- if recommendations.products_count > 0 -%}
+      {%- if section.settings.heading != blank -%}
+        <h2 class="product-recommendations-heading text-cap">{{ section.settings.heading }}</h2>
       {%- endif -%}
-    {%- endfor -%}
-  </div>
+
+      <div class="product-recommendations-grid grid grid-{{ section.settings.grid_columns }}">
+        {%- for product in recommendations.products -%}
+          {% render 'product-card', product: product %}
+        {%- endfor -%}
+      </div>
+    {%- endif -%}
+  {%- else -%}
+    {%- comment -%} Skeleton placeholders shown until JS fetches recommendations {%- endcomment -%}
+    {%- if section.settings.heading != blank -%}
+      <h2 class="product-recommendations-heading text-cap">{{ section.settings.heading }}</h2>
+    {%- endif -%}
+
+    <div class="product-recommendations-grid grid grid-{{ section.settings.grid_columns }}">
+      {%- for i in (1..section.settings.products_to_show) -%}
+        <div class="placeholder-card" aria-hidden="true"></div>
+      {%- endfor -%}
+    </div>
+  {%- endif -%}
 </product-recommendations>
 
 <script type="module" src="{{ 'product-recommendations.js' | asset_url }}"></script>
@@ -58,84 +33,37 @@
 {% stylesheet %}
   .product-recommendations {
     display: block;
-    padding: var(--spacing-xs);
+    padding: var(--spacing-l) var(--spacing-base);
     color: var(--color-text);
     background-color: var(--color-bg);
+    overflow: hidden;
   }
 
-  @media (min-width: 900px) {
-    .product-recommendations {
-      padding: var(--spacing-m);
-    }
+  .product-recommendations-heading {
+    margin-bottom: var(--spacing-base);
   }
 
-  /* Lockup alignment + internal gaps come from .section-lockup (base.css §22).
-     This rule only handles the gap between the lockup and the product grid below. */
-  .product-recommendations-header {
-    margin-bottom: var(--spacing-m);
-  }
-
-  .product-recommendations-header h3 {
-    max-width: 36ch;
-  }
-
-  /* Mobile: carousel (horizontal scroll-snap). Bleeds past the section's right
-     padding so cards extend to the screen edge for a clear scroll affordance. */
-  .product-recommendations-products.mobile-carousel {
-    display: flex;
-    gap: var(--spacing-xs);
-    overflow-x: auto;
-    scroll-snap-type: x mandatory;
-    scrollbar-width: none;
-    padding-bottom: var(--spacing-xs);
-    margin-right: calc(-1 * var(--spacing-xs));
-  }
-
-  .product-recommendations-products.mobile-carousel::-webkit-scrollbar {
-    display: none;
-  }
-
-  .product-recommendations-products.mobile-carousel > * {
-    flex: 0 0 75%;
-    scroll-snap-align: start;
-  }
-
-  /* Mobile: stacked grid (1 column) */
-  .product-recommendations-products.mobile-grid {
+  .product-recommendations-grid {
     display: grid;
-    grid-template-columns: 1fr;
-    gap: var(--spacing-xs);
+    gap: var(--spacing-base);
+    grid-template-columns: repeat(2, 1fr);
   }
 
-  /* Tablet+: 2-column grid (overrides both mobile modes). */
   @media (min-width: 600px) {
-    .product-recommendations-products.mobile-carousel,
-    .product-recommendations-products.mobile-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: var(--spacing-xs);
-      overflow: visible;
-      padding-bottom: 0;
-      margin-right: 0;
-    }
-
-    .product-recommendations-products.mobile-carousel > * {
-      flex: initial;
-      scroll-snap-align: none;
+    .product-recommendations-grid {
+      grid-template-columns: repeat(3, 1fr);
     }
   }
 
-  /* Desktop+: 4-column grid */
   @media (min-width: 900px) {
-    .product-recommendations-products.mobile-carousel,
-    .product-recommendations-products.mobile-grid {
+    .product-recommendations-grid.grid-4 {
       grid-template-columns: repeat(4, 1fr);
     }
   }
 
   .placeholder-card {
     aspect-ratio: 3 / 4;
-    background: var(--color-border);
+    background: var(--color-border, #e5e5e5);
     border-radius: var(--rad-s);
     animation: placeholder-pulse 1.5s ease-in-out infinite;
   }
@@ -160,38 +88,9 @@
   "settings": [
     {
       "type": "text",
-      "id": "eyebrow",
-      "label": "Eyebrow (h1 — small uppercase label)",
-      "default": "Recommended"
-    },
-    {
-      "type": "textarea",
       "id": "heading",
-      "label": "Heading (h3)",
-      "info": "Press Enter to add a line break.",
-      "default": "You may also like."
-    },
-    {
-      "type": "text",
-      "id": "button_text",
-      "label": "Button label"
-    },
-    {
-      "type": "url",
-      "id": "button_link",
-      "label": "Button link"
-    },
-    {
-      "type": "collection",
-      "id": "fallback_collection",
-      "label": "Fallback collection",
-      "info": "Shown when Shopify's automatic recommendations return no products. Leave empty to use \"All products.\""
-    },
-    {
-      "type": "product",
-      "id": "exclude_product",
-      "label": "Product to exclude",
-      "info": "Hide this product from the grid in addition to the current product (e.g. the mixed box / bundle)."
+      "label": "Heading",
+      "default": "You may also like"
     },
     {
       "type": "range",
@@ -204,14 +103,13 @@
     },
     {
       "type": "select",
-      "id": "mobile_layout",
-      "label": "Mobile layout",
-      "info": "How products display on mobile. Tablet and desktop are always a grid.",
+      "id": "grid_columns",
+      "label": "Grid columns (desktop)",
       "options": [
-        { "value": "carousel", "label": "Carousel (horizontal scroll)" },
-        { "value": "grid", "label": "Grid (stacked)" }
+        { "value": "3", "label": "3 columns" },
+        { "value": "4", "label": "4 columns" }
       ],
-      "default": "carousel"
+      "default": "4"
     },
     {
       "type": "color_scheme",

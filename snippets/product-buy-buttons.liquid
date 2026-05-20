@@ -17,8 +17,7 @@
     {% unless product.selected_or_first_available_variant.available %}disabled{% endunless %}
   >
     {%- if product.selected_or_first_available_variant.available -%}
-      <span>{{ 'products.product.add_to_cart' | t }}</span>
-      <span class="button-price">{{ product.selected_or_first_available_variant.price | money }}</span>
+      {{ 'products.product.add_to_cart' | t }}
     {%- else -%}
       {{ 'products.product.sold_out' | t }}
     {%- endif -%}
