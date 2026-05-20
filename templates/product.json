@@ -25,10 +25,21 @@
         "grid_columns": "4",
         "color_scheme": "scheme-3"
       }
+    },
+    "product_recommendations_e4XLkN": {
+      "type": "product-recommendations",
+      "name": "Product recommendations",
+      "settings": {
+        "heading": "You may also like",
+        "products_to_show": 4,
+        "grid_columns": "4",
+        "color_scheme": ""
+      }
     }
   },
   "order": [
     "main",
-    "product_recommendations_76MMMN"
+    "product_recommendations_76MMMN",
+    "product_recommendations_e4XLkN"
   ]
 }
