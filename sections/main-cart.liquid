@@ -21,8 +21,14 @@
   </form>
 </div>
 
-<script src="{{ 'cart-items.js' | asset_url }}" defer></script>
-<script src="{{ 'quantity-selector.js' | asset_url }}" defer></script>
+{%- comment -%}
+  When cart_type == 'drawer', sections/cart-drawer.liquid loads these globally,
+  so skip them here to avoid customElements.define throwing on a second load.
+{%- endcomment -%}
+{%- if settings.cart_type != 'drawer' -%}
+  <script src="{{ 'cart-items.js' | asset_url }}" defer></script>
+  <script src="{{ 'quantity-selector.js' | asset_url }}" defer></script>
+{%- endif -%}
 
 {% stylesheet %}
   .cart-page {

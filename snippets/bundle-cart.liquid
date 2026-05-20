@@ -1,19 +1,13 @@
 {%- comment -%}
-  Bundle cart panel — the "Your Box" summary.
+  Bundle cart panel — the "Your Box" draft preview inside the bundle builder.
 
-  Shared between the bundle builder section (right column) and the cart drawer.
   Pure empty hooks: assets/bundle-cart-view.js (renderBundleCart) hydrates the
   [data-cart-*] hooks from the bundle store snapshot. Click handling for the
-  per-line × buttons and [data-checkout] is owned by whichever component wraps
-  this snippet (<bundle-builder> or <cart-drawer>) — both delegate to
-  assets/bundle-store.js.
+  per-line × buttons and [data-add-to-cart] is owned by <bundle-builder>, which
+  delegates to assets/bundle-store.js.
 
   Owner: assets/bundle-store.js + assets/bundle-cart-view.js
-  Rendered by: sections/bundle-builder.liquid, sections/cart-drawer.liquid
-
-  The co-located stylesheet ships wherever the snippet is rendered — the cart
-  drawer is global, so the styles must travel with the snippet rather than
-  living in the bundle-builder section (which only loads on the bundle page).
+  Rendered by: sections/bundle-builder.liquid
 {%- endcomment -%}
 <section
   class="bundle-cart"
@@ -34,8 +28,8 @@
       <span data-price></span>
     </div>
   </div>
-  <button type="button" class="button bundle-checkout" data-checkout hidden>
-    {{ 'sections.bundle_builder.checkout' | t }}
+  <button type="button" class="button bundle-checkout" data-add-to-cart hidden>
+    {{ 'sections.bundle_builder.add_to_cart' | t }}
   </button>
   <div class="form-error" data-error role="alert" hidden></div>
 </section>

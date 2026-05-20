@@ -3,7 +3,8 @@
 
   Lightweight quick-add for product cards. Intercepts the wrapped <form>'s
   submission, POSTs to /cart/add.js for the default variant, and dispatches
-  'cart:item-added' so the cart drawer opens and the cart icon updates.
+  'cart:item-added' so the cart icon updates and the drawer refreshes (it no
+  longer auto-opens). On success, shows an "Added to cart" toast.
 
   Why a separate component (not <product-form>): the PDP form handles variant
   selectors, quantity input, server-rendered region swaps, and product JSON
@@ -12,7 +13,7 @@
 
   Expected markup (emitted by snippets/product-card.liquid):
 
-    <product-card-quick-add>
+    <product-card-quick-add data-added-message="{{ 'products.product.added_to_cart' | t }}">
       <form action="/cart/add" method="post">
         <input type="hidden" name="id" value="{{ variant.id }}">
         <button type="submit" class="button">Shop now</button>
@@ -23,12 +24,15 @@
   browser navigates to /cart after submit. Works without the component.
 */
 
+import { showToast } from './toast.js';
+
 class ProductCardQuickAdd extends HTMLElement {
   connectedCallback() {
     this.form = this.querySelector('form');
     if (!this.form) return;
 
     this.button = this.form.querySelector('button[type="submit"]');
+    this.addedMessage = this.dataset.addedMessage;
     this.handleSubmit = this.handleSubmit.bind(this);
     this.form.addEventListener('submit', this.handleSubmit);
   }
@@ -48,29 +52,38 @@ class ProductCardQuickAdd extends HTMLElement {
       const variantId = this.form.querySelector('input[name="id"]')?.value;
       if (!variantId) throw new Error('Missing variant id');
 
-      const response = await fetch('/cart/add.js', {
+      const addResponse = await fetch('/cart/add.js', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'X-Requested-With': 'XMLHttpRequest'
         },
-        body: JSON.stringify({ items: [{ id: parseInt(variantId, 10), quantity: 1 }] })
+        body: JSON.stringify({
+          items: [{ id: parseInt(variantId, 10), quantity: 1 }],
+          sections: ['cart-drawer']
+        })
       });
 
-      if (!response.ok) {
-        const err = await response.json().catch(() => ({}));
+      if (!addResponse.ok) {
+        const err = await addResponse.json().catch(() => ({}));
         throw new Error(err.description || 'Failed to add to cart');
       }
 
-      const data = await response.json();
+      const addData = await addResponse.json();
 
+      // Dispatch immediately — drawer opens and refreshes from the bundled
+      // section HTML. cart-icon self-fetches /cart.js for the new count if
+      // detail.cart is missing, so we don't block the drawer-open path on it.
       document.dispatchEvent(new CustomEvent('cart:item-added', {
-        detail: { items: data.items || data }
+        detail: { sections: addData.sections }
       }));
 
-      // If cart type is 'page' (not drawer), redirect — matches product-form.js
+      // Page mode redirects to /cart; drawer mode shows a success toast
+      // (the cart drawer no longer auto-opens). Matches product-form.js.
       if (document.body.dataset.cartType === 'page') {
         window.location.href = '/cart';
+      } else {
+        showToast(this.addedMessage || 'Added to cart', { variant: 'success' });
       }
     } catch (err) {
       console.error('[product-card-quick-add]', err);

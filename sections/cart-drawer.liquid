@@ -1,9 +1,14 @@
 {%- comment -%}
-  Cart drawer — a floating "island" overlay that scales in from the top-right,
-  styled to match the bundle builder's "Your Box" column. A second view over
-  the bundle store: renders the shared bundle-cart snippet from localStorage,
-  with working remove buttons + checkout. No native Shopify cart involvement —
-  the bundle is this store's only purchase path.
+  Cart drawer — a floating "island" overlay that scales in from the top-right.
+  Renders the native Shopify cart (cart-items + cart-totals, or cart-empty),
+  refreshed via Shopify's Section Rendering API. Listens on `document` for
+  `cart:item-added` and `cart:updated` — both swap the body; neither auto-opens
+  the drawer (add-to-cart shows a success toast, and the drawer opens on
+  cart-icon click). Quantity changes and removes inside the drawer go through
+  the embedded <cart-items> component (assets/cart-items.js).
+
+  Section id `cart-drawer` is the key for ?section_id=cart-drawer and
+  bundled-sections POST bodies (`sections: ['cart-drawer']`).
 {%- endcomment -%}
 <cart-drawer id="cart-drawer" class="cart-drawer" role="dialog" aria-modal="true" aria-hidden="true" aria-label="{{ 'cart.drawer.title' | t }}">
   <div class="cart-drawer-overlay" data-overlay></div>
@@ -14,12 +19,21 @@
         {% render 'icon-close' %}
       </button>
     </div>
-    <div class="cart-drawer-content">
-      {% render 'bundle-cart' %}
+    <div class="cart-drawer-content" data-drawer-body>
+      <cart-items>
+        {%- if cart.item_count > 0 -%}
+          {% render 'cart-items', cart: cart %}
+          {% render 'cart-totals', cart: cart %}
+        {%- else -%}
+          {% render 'cart-empty' %}
+        {%- endif -%}
+      </cart-items>
     </div>
   </div>
 </cart-drawer>
 
+<script type="module" src="{{ 'cart-items.js' | asset_url }}"></script>
+<script type="module" src="{{ 'quantity-selector.js' | asset_url }}"></script>
 <script type="module" src="{{ 'cart-drawer.js' | asset_url }}"></script>
 
 {% stylesheet %}
@@ -49,18 +63,16 @@
     opacity: 1;
   }
 
-  /* Island: a content-sized card pinned under the top-right cart button,
-     matching the bundle builder's "Your Box" column (300px, --color-bg,
-     --rad-s, --spacing-xxs padding). Scales in from its top-right corner. */
+  /* Island: a content-sized card pinned under the top-right cart button. */
   .cart-drawer-panel {
     position: absolute;
     top: calc(var(--header-height) + var(--spacing-xxs));
     right: var(--spacing-xxs);
-    width: 300px;
+    width: 360px;
     max-width: calc(100vw - var(--spacing-s));
     display: flex;
     flex-direction: column;
-    padding: var(--spacing-xxs);
+    padding: var(--spacing-s);
     border-radius: var(--rad-s);
     background: var(--color-bg);
     transform-origin: top right;
@@ -77,7 +89,7 @@
   .cart-drawer-bar {
     display: flex;
     justify-content: flex-end;
-    margin-bottom: var(--spacing-xxs);
+    margin-bottom: var(--spacing-xs);
   }
 
   .cart-drawer-close {
@@ -93,12 +105,10 @@
     overflow-y: auto;
   }
 
-  /* The shared "Your Box" panel is itself a card on the bundle page; in the
-     island the .cart-drawer-panel is the card, so flatten the snippet chrome. */
-  .cart-drawer .bundle-cart {
-    background: transparent;
-    border-radius: 0;
-    padding: 0;
+  /* Loading state during refresh — dim contents while we swap. */
+  .cart-drawer-content cart-items.is-loading {
+    opacity: 0.5;
+    pointer-events: none;
   }
 
   body.drawer-open {
