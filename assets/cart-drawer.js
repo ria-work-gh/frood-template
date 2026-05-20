@@ -164,5 +164,3 @@ class CartDrawer extends HTMLElement {
 }
 
 customElements.define('cart-drawer', CartDrawer);
-</content>
-</invoke>

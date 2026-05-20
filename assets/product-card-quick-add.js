@@ -98,5 +98,3 @@ class ProductCardQuickAdd extends HTMLElement {
 }
 
 customElements.define('product-card-quick-add', ProductCardQuickAdd);
-</content>
-</invoke>

@@ -79,5 +79,3 @@ class CartIcon extends HTMLElement {
 }
 
 customElements.define('cart-icon', CartIcon);
-</content>
-</invoke>
