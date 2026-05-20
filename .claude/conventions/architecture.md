@@ -223,15 +223,27 @@ this.querySelectorAll('[data-variant-render]').forEach((el) => {
 
 Use when a user action changes which Liquid data should display (variant selection, cart updates) and markup involves translations or money formatting. Use an incrementing counter as a race condition guard.
 
-### Error Handling
+### Error & Feedback Handling
 
-Errors display inline near the triggering action — no toast notifications:
+Two channels, by scope:
 
-```liquid
-<div data-error class="form-error" role="alert" hidden></div>
-```
+- **Field-level / contextual validation → inline.** Errors tied to a specific input (e.g. "Only 3 available" by the quantity selector) display next to that field:
 
-Show/hide by toggling `hidden` and setting `textContent`. Use `role="alert"` for screen reader announcement.
+  ```liquid
+  <div data-error class="form-error" role="alert" hidden></div>
+  ```
+
+  Show/hide by toggling `hidden` and setting `textContent`. Use `role="alert"` for screen reader announcement.
+
+- **Action-level / global feedback → toast.** Success confirmations and action failures with no single field to attach to (add-to-cart success, network failure, checkout error) fire a `toast:show` event handled by the global `<toast-region>` (`assets/toast.js`):
+
+  ```js
+  import { showToast } from './toast.js';
+  showToast('Added to bag', { variant: 'success' });
+  // errors: showToast('Something went wrong. Please try again.', { variant: 'error' });
+  ```
+
+  See the `assets/toast.js` header for the full event contract.
 
 ### Progressive Enhancement
 

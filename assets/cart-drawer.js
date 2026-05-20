@@ -1,25 +1,42 @@
 /**
- * <cart-drawer> — floating "island" overlay over the Shopify-native cart.
+ * <cart-drawer> — floating "island" overlay that mirrors the native Shopify cart.
  *
- * Listens for:
- *   - cart:item-added (from product-form.js, product-card-quick-add.js)
- *     → refreshes content from bundled section HTML, then opens.
- *   - cart:updated (from cart-items.js on quantity change / remove)
- *     → refreshes content silently (no open).
+ * Body markup is server-rendered by sections/cart-drawer.liquid; this component
+ * keeps it in sync via Shopify's Section Rendering API. Listens on `document`:
+ *
+ *   'cart:updated'      detail.sections['cart-drawer'] → swap body
+ *   'cart:item-added'   detail.sections['cart-drawer'] → swap body (does NOT
+ *                       auto-open; the add-to-cart view shows a success toast,
+ *                       and the drawer opens on cart-icon click). If no sections
+ *                       payload, fetch /?section_id=cart-drawer to stay current.
+ *
+ * Quantity/remove inside the drawer go through the embedded <cart-items>
+ * (assets/cart-items.js), which POSTs /cart/change.js with `sections:
+ * ['cart-drawer']` and re-dispatches 'cart:updated' with the bundled HTML.
  *
  * If the event detail carries sections['cart-drawer'], the drawer swaps from
  * that. Otherwise it falls back to a Section Rendering API fetch.
  *
- * cart-items.js handles in-drawer quantity changes / removals; it detects it's
- * inside <cart-drawer> and skips its own re-render, letting this component
- * own the swap.
+ * Expected markup:
+ *   <cart-drawer id="cart-drawer" class="cart-drawer" aria-hidden="true"
+ *     role="dialog" aria-modal="true" aria-label="Cart">
+ *     <div class="cart-drawer-overlay" data-overlay></div>
+ *     <div class="cart-drawer-panel">
+ *       <div class="cart-drawer-bar">
+ *         <button class="cart-drawer-close" data-close>X</button>
+ *       </div>
+ *       <div class="cart-drawer-content" data-drawer-body>
+ *         <cart-items>…native cart markup…</cart-items>
+ *       </div>
+ *     </div>
+ *   </cart-drawer>
  */
 
 class CartDrawer extends HTMLElement {
   connectedCallback() {
     this.overlay = this.querySelector('[data-overlay]');
     this.closeBtn = this.querySelector('[data-close]');
-    this.content = this.querySelector('[data-cart-content]');
+    this.body = this.querySelector('[data-drawer-body]');
     this.previouslyFocused = null;
 
     this.handleKeydown = this.handleKeydown.bind(this);
@@ -27,16 +44,16 @@ class CartDrawer extends HTMLElement {
     this.closeBtn?.addEventListener('click', () => this.close());
     this.overlay?.addEventListener('click', () => this.close());
 
+    this._onCartUpdated = (e) => this.refresh(e.detail?.sections?.['cart-drawer']);
     this._onItemAdded = (e) => this.handleItemAdded(e);
-    document.addEventListener('cart:item-added', this._onItemAdded);
 
-    this._onCartUpdated = (e) => this.handleCartUpdated(e);
     document.addEventListener('cart:updated', this._onCartUpdated);
+    document.addEventListener('cart:item-added', this._onItemAdded);
   }
 
   disconnectedCallback() {
-    document.removeEventListener('cart:item-added', this._onItemAdded);
     document.removeEventListener('cart:updated', this._onCartUpdated);
+    document.removeEventListener('cart:item-added', this._onItemAdded);
     document.removeEventListener('keydown', this.handleKeydown);
   }
 
@@ -44,48 +61,49 @@ class CartDrawer extends HTMLElement {
     return this.classList.contains('is-open');
   }
 
-  // ---- Cart events ------------------------------------------------------
+  // ---- Refresh ----------------------------------------------------------
+
+  // Swap the drawer body with the [data-drawer-body] content from a fresh
+  // server-rendered cart-drawer section. `html` is the raw section string
+  // from Shopify's Section Rendering API.
+  refresh(html) {
+    if (!html || !this.body) return;
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    const fresh = doc.querySelector('[data-drawer-body]');
+    if (fresh) this.body.innerHTML = fresh.innerHTML;
+    this.dispatchEvent(new CustomEvent('content:loaded', { bubbles: true }));
+  }
 
   async handleItemAdded(e) {
-    await this.refresh(e.detail?.sections);
-    this.open();
-  }
-
-  async handleCartUpdated(e) {
-    await this.refresh(e.detail?.sections);
-  }
-
-  /**
-   * Replace this drawer's <cart-items> contents from the bundled section
-   * HTML, or fall back to a Section Rendering API fetch if none was provided.
-   * @param {Object} [sections] - { 'cart-drawer': '<html>…</html>' }
-   */
-  async refresh(sections) {
-    const currentCartItems = this.querySelector('cart-items');
-    if (!currentCartItems) return;
-
-    currentCartItems.classList.add('is-loading');
-
-    try {
-      let html = sections?.['cart-drawer'];
-      if (!html) {
-        const response = await fetch(`${window.location.pathname}?section_id=cart-drawer`);
-        if (!response.ok) return;
-        html = await response.text();
+    const html = e.detail?.sections?.['cart-drawer'];
+    if (html) {
+      this.refresh(html);
+    } else {
+      // Sender didn't bundle sections — fetch the section ourselves so the
+      // body is current the next time the drawer is opened (via the cart icon).
+      // Dim the current items while the fetch is in flight (visible if the
+      // drawer is already open).
+      const cartItems = this.body?.querySelector('cart-items');
+      cartItems?.classList.add('is-loading');
+      try {
+        const response = await fetch('/?section_id=cart-drawer');
+        if (response.ok) this.refresh(await response.text());
+      } catch {
+        /* network blip — leave the body stale until the next refresh */
+      } finally {
+        cartItems?.classList.remove('is-loading');
       }
-
-      const doc = new DOMParser().parseFromString(html, 'text/html');
-      const newCartItems = doc.querySelector('cart-items');
-      if (newCartItems) {
-        currentCartItems.innerHTML = newCartItems.innerHTML;
-      }
-    } finally {
-      currentCartItems.classList.remove('is-loading');
     }
+    // No auto-open: add-to-cart feedback is a success toast fired by the
+    // add-to-cart view (product-form / product-card-quick-add / bundle-builder).
+    // The drawer opens on cart-icon click.
   }
 
   // ---- Open / close -----------------------------------------------------
 
+  /**
+   * Open the cart drawer. Locks body scroll, traps focus, listens for Escape.
+   */
   open() {
     this.previouslyFocused = document.activeElement;
 

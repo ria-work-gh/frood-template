@@ -19,6 +19,7 @@ templates/       JSON templates + gift_card.liquid
     commerce.md                  Cart events, flows, error handling
     accessibility.md             WCAG, keyboard, ARIA, focus
     decisions.md                 Rationale for architectural choices
+    sections.md                  Per-section detail (homepage + bundle builder)
 ```
 
 ## Before Building Anything
@@ -28,6 +29,7 @@ templates/       JSON templates + gift_card.liquid
 3. Read `conventions/commerce.md` for cart event protocol and add-to-cart flows
 4. Read `conventions/accessibility.md` for WCAG requirements and ARIA patterns
 5. Read `conventions/decisions.md` when code seems unusual — it explains the rationale
+6. Read `conventions/sections.md` for the full detail on a specific custom section
 
 ## Critical Code Patterns
 
@@ -156,13 +158,13 @@ Loaded per-section:
 
 **State:** CSS classes (`is-open`, `is-loading`) — not data attributes.
 **Events:** `namespace:action` format (`cart:updated`, `drawer:opened`).
-**Errors:** Inline near the action, `role="alert"` — no toast notifications.
+**Feedback:** Field-level validation inline (`role="alert"`); action-level success/failure via toast (`toast:show` → `<toast-region>`, assets/toast.js).
 
 ### Cart Event Flow
 
 ```
-product-form → dispatches cart:item-added
-  → cart-drawer listens → refresh() + open()
+product-form → dispatches cart:item-added + success toast (drawer mode)
+  → cart-drawer listens → refresh() (no auto-open; opens on cart-icon click)
   → cart-icon listens → updateCount()
 
 cart-items → quantity change or remove → POST /cart/change.js
@@ -204,43 +206,15 @@ Always include dimensions to prevent layout shift:
 
 Each snippet is owned by ONE section/area. When modifying a snippet, read its owning code:
 
-<<<<<<< HEAD
-| Snippet                    | Owner                             | Used By                                                                                                                                                                                          |
-| -------------------------- | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `product-card`             | `sections/main-collection.liquid` | featured-collection, collection, search                                                                                                                                                          |
-| `product-price`            | `sections/main-product.liquid`    | product-card, main-product                                                                                                                                                                       |
-| `product-variant-selector` | `sections/main-product.liquid`    | main-product                                                                                                                                                                                     |
-| `product-buy-buttons`      | `sections/main-product.liquid`    | main-product                                                                                                                                                                                     |
-| `product-gallery`          | `sections/main-product.liquid`    | main-product                                                                                                                                                                                     |
-| `product-upsells`          | `sections/main-product.liquid`    | main-product, cart-drawer                                                                                                                                                                        |
-| ~~`quick-add`~~            | removed                           | Product cards no longer have a quick-add button — users click through to the product page to add to cart. `assets/quick-add.js` deleted, related markup/CSS stripped from `product-card.liquid`. |
-| `quantity-selector`        | `assets/quantity-selector.js`     | main-product, cart-item                                                                                                                                                                          |
-| `cart-items`               | `sections/main-cart.liquid`       | main-cart, cart-drawer                                                                                                                                                                           |
-| `cart-item`                | `sections/main-cart.liquid`       | cart-items                                                                                                                                                                                       |
-| `cart-totals`              | `sections/main-cart.liquid`       | main-cart, cart-drawer                                                                                                                                                                           |
-| `cart-empty`               | `sections/main-cart.liquid`       | main-cart, cart-drawer                                                                                                                                                                           |
-| `collection-filters`       | `sections/main-collection.liquid` | main-collection                                                                                                                                                                                  |
-| `pagination`               | `sections/main-collection.liquid` | collection, blog, search                                                                                                                                                                         |
-| `article-card`             | `sections/main-blog.liquid`       | main-blog, search                                                                                                                                                                                |
-| `share-buttons`            | `sections/main-article.liquid`    | main-article                                                                                                                                                                                     |
-| `newsletter-form`          | `sections/footer.liquid`          | footer, main-password                                                                                                                                                                            |
-| `meta-tags`                | `layout/theme.liquid`             | theme.liquid                                                                                                                                                                                     |
-| `json-ld-organization`     | `layout/theme.liquid`             | theme.liquid                                                                                                                                                                                     |
-| `json-ld-product`          | `sections/main-product.liquid`    | main-product                                                                                                                                                                                     |
-| `icon-*`                   | `sections/header.liquid`          | header, cart-drawer, mobile-menu                                                                                                                                                                 |
-| `logo-frood`               | `sections/hero.liquid`            | Frood wordmark — inline SVG using `fill="currentColor"`; set `color` on the parent to recolor. Source SVG kept at `assets/icon.svg` for reference                                                |
-| `recipe-card`              | `sections/main-recipes.liquid`    | Recipe index grid. **Placeholder treatment** — image + name + duration only. Full card design (typography, hover, badges) lands later. Reads from `recipes` metaobject.                          |
-| `news-card`                | `sections/main-news.liquid`       | News index grid. **Placeholder treatment** — image + name only. Full card design (date, excerpt, hover) lands later. Reads from `news` metaobject.                                               |
-=======
 | Snippet | Owner | Used By |
-|---------|-------|---------|
+|---|---|---|
 | `product-card` | `sections/main-collection.liquid` | featured-collection, collection, search |
 | `product-price` | `sections/main-product.liquid` | product-card, main-product |
 | `product-variant-selector` | `sections/main-product.liquid` | main-product |
 | `product-buy-buttons` | `sections/main-product.liquid` | main-product |
 | `product-gallery` | `sections/main-product.liquid` | main-product |
 | `product-upsells` | `sections/main-product.liquid` | main-product, cart-drawer |
-| ~~`quick-add`~~ | removed | Product cards no longer have a quick-add button — users click through to the product page to add to cart. `assets/quick-add.js` deleted, related markup/CSS stripped from `product-card.liquid`. |
+| `product-card-quick-add` (markup in `product-card.liquid` + `assets/product-card-quick-add.js`) | `sections/main-collection.liquid` (via `product-card`) | product-card | Quick-add button on product cards. `<product-card-quick-add>` intercepts the wrapped `<form>` and POSTs the first available variant to the **native** `/cart/add.js`, then dispatches `cart:item-added` so the cart drawer opens + cart icon updates — the same native-cart path as the PDP. No-JS fallback: `<form action="/cart/add">` posts normally. |
 | `quantity-selector` | `assets/quantity-selector.js` | main-product, cart-item |
 | `cart-items` | `sections/main-cart.liquid` | main-cart, cart-drawer |
 | `cart-item` | `sections/main-cart.liquid` | cart-items |
@@ -257,8 +231,7 @@ Each snippet is owned by ONE section/area. When modifying a snippet, read its ow
 | `icon-*` | `sections/header.liquid` | header, cart-drawer, mobile-menu |
 | `logo-frood` | `sections/hero.liquid` | Frood wordmark — inline SVG using `fill="currentColor"`; set `color` on the parent to recolor. Source SVG kept at `assets/icon.svg` for reference |
 | `recipe-card` | `sections/main-recipes.liquid` | Recipe index grid. **Placeholder treatment** — image + name + duration only. Full card design (typography, hover, badges) lands later. Reads from `recipes` metaobject. |
-| `news-card` | `sections/main-news.liquid` | News index card. Two-column on tablet+ (image 4:3 + `.section-lockup` of date/location → title → "Link" button on the left; rich-text description capped at 60ch on the right). Stacks on mobile. Reads from `news` metaobject (handles: `title`, `date`, `location`, `news_image`, `news_description`, `news_link`). |
->>>>>>> 40f551c (18 may 11:20 commit)
+| `news-card` | `sections/main-news.liquid` | News index grid. Three-column on tablet+ (image 4:3 \| `.section-lockup` of date/location → title → "Link" button \| rich-text description capped at a readable width); stacks in the same order on mobile. Hairlines between entries handled by `main-news.liquid`. Reads `news` metaobject (handles: `title`, `date`, `location`, `news_image`, `news_description`, `news_link`). |
 
 ## Design Tokens (Quick Reference)
 
@@ -306,21 +279,21 @@ Authoritative values live in `assets/base.css` `:root` block.
 
 ## Frood Typography
 
-Each style has both a **token group** (in `:root`) and a **utility class** (in `base.css` section 5). Apply the utility class directly in markup — the existing reset strips default `h1`/`h2` browser styles, so semantic tags don't auto-receive these.
+Each style has both a **token group** (in `:root`) and a **utility class** (in `base.css` section 5). Apply the utility class directly in markup — the existing reset strips default `h1`/`h2` browser styles, so semantic tags don't auto-receive these. Line-height/letter-spacing are stored as `em` (1.1em = 110%; 0.01em = 1%).
 
-| Class        | Font    | Weight | Size | Line height  | Letter spacing | When to use                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
-| ------------ | ------- | ------ | ---- | ------------ | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `.text-h1`   | HW Left | 400    | 12px | 1.1em (110%) | 0.01em (1%)    | H1 headings — the top-level heading on a page. **Always uppercase** AND **always rendered in `--color-text-accent` (warm muted grey)** — both are baked into `.text-h1` in `base.css`. Intentionally small — used as a tiny eyebrow/label, not as a visual page title. The `.button` (primary) inherits the typography props but overrides `color` explicitly (button labels are dark on yellow, not grey), and `.text-transform: uppercase` is inherited too. **Never override the h1 color unless the user explicitly asks for it** — it's a brand rule. |
-| `.text-h2`   | HW Left | 500    | 36px | 1.1em (110%) | 0em (0%)       | H2 headings — primary visible page heading (often the largest visible text on a section)                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
-| `.text-h3`   | HW Left | 500    | 24px | 1.1em (110%) | 0em (0%)       | H3 headings — sub-section headings within an H2                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
-| `.text-body` | HW Left | 400    | 14px | 1.1em (110%) | 0em (0%)       | Paragraph copy, product descriptions, article text — anywhere prose lives                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| `.text-ui`   | HW Left | 500    | 14px | 1.2em (120%) | 0em (0%)       | Interactive UI text — buttons, nav links, form labels, input placeholders, badges. Same size as body but medium weight + slightly more line-height for legibility in small interactive targets                                                                                                                                                                                                                                                                                                                                                             |
+| Class | Font | Weight | Size | Line height | Letter spacing | When to use |
+|---|---|---|---|---|---|---|
+| `.text-h1` | HW Left | 400 | 12px | 1.1em | 0.01em | H1 — top-level page heading. **Always uppercase** AND **always rendered in `--color-text-accent` (warm muted grey)** — both baked into `.text-h1`. Intentionally small: a tiny eyebrow/label, not a visual page title. `.button` inherits the typography props but overrides `color` (button labels are dark on yellow, not grey). **Never override the h1 color unless the user explicitly asks — it's a brand rule.** |
+| `.text-h2` | HW Left | 500 | 36px | 1.1em | 0em | H2 — primary visible page heading (often the largest visible text on a section) |
+| `.text-h3` | HW Left | 500 | 24px | 1.1em | 0em | H3 — sub-section headings within an H2 |
+| `.text-body` | HW Left | 400 | 14px | 1.1em | 0em | Paragraph copy, product descriptions, article text — anywhere prose lives |
+| `.text-ui` | HW Left | 500 | 14px | 1.2em | 0em | Interactive UI text — buttons, nav links, form labels, input placeholders, badges. Same size as body but medium weight + slightly more line-height for legibility in small interactive targets |
 
 **Rules:**
 
 - Always apply the utility class explicitly — e.g. `<h1 class="text-h1">…</h1>`. Never assume native `h1` inherits these styles.
 - The semantic tag (`h1`, `h2`, etc.) is for _meaning and accessibility_; the class is for _visual style_. They're decoupled — a `<div class="text-h1">` is wrong (use the semantic tag); a `<h2 class="text-h1">` is fine if a visual H1 is needed inside an H2 page-section.
-- Sizes, line-heights, and letter-spacings come from Figma. Line-height and letter-spacing percentages are stored as `em` units in CSS (1.1em = 110%; 0.01em = 1%).
+- Sizes, line-heights, and letter-spacings come from Figma.
 - **Spacing between an h1 eyebrow and the heading directly below it (h2 or h3) is always `--spacing-xxs` (8px).** This is the canonical pairing — applies anywhere an h1 eyebrow sits above an h2 or h3, whether inside `.section-lockup` (which already defaults to this) or in bespoke compositions like the quote section. Don't use `xs`/`s`/`m` for this gap.
 
 The older abstract scale (`.text-mini`, `.text-base`, `.text-medium`, `.text-large`, `.text-xl`) is still defined in `base.css` for backward compatibility with existing snippets/sections. Prefer Frood semantic classes (`.text-h1`, etc.) for new code.
@@ -331,10 +304,10 @@ The older abstract scale (`.text-mini`, `.text-base`, `.text-medium`, `.text-lar
 
 This is handled by two container classes in `base.css` — pick whichever fits the context:
 
-| Wrapper class | When to use                                                                               | Side-effects                                                                                               |
-| ------------- | ----------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| `.typeset`    | Long-form merchant prose (article bodies, page content, product description, FAQ answers) | Adds top margin between paragraphs and large top margin (2em) before headings — designed for flowing prose |
-| `.text-body`  | Short richtext fields (captions, small editable blurbs)                                   | None beyond Frood body typography. No prose margin rules — control paragraph spacing locally if needed     |
+| Wrapper class | When to use | Side-effects |
+|---|---|---|
+| `.typeset` | Long-form merchant prose (article bodies, page content, product description, FAQ answers) | Adds top margin between paragraphs and large top margin (2em) before headings — designed for flowing prose |
+| `.text-body` | Short richtext fields (captions, small editable blurbs) | None beyond Frood body typography. No prose margin rules — control paragraph spacing locally if needed |
 
 Both classes already include this rule in `base.css` (§6):
 
@@ -426,128 +399,16 @@ Both classes already include this rule in `base.css` (§6):
 
 (Add new locations here as more sections adopt it.)
 
-## Frood Homepage Sections
+## Frood Custom Sections
 
-The homepage (`templates/index.json`) uses a small set of custom Frood sections. The starter's `hero-banner`, `hero-slideshow`, `text-section`, and `rich-text` sections were deleted — don't try to use them. The featured-collection starter section IS kept and themed via tokens.
+Custom sections built for Frood. **Full per-section detail — layout, breakpoints, schema, gotchas — lives in `conventions/sections.md`; read it before editing any of these.** The implemented `.liquid` files are the source of truth. The starter's `hero-banner`, `hero-slideshow`, `text-section`, `rich-text`, and `image-text` sections were deleted — don't try to use them.
 
-### `hero.liquid` (Frood Hero)
-
-Full-bleed image background with the Frood wordmark centered in `--color-accent` (yellow).
-
-- **Dimensions:** width 100% (effectively full viewport), height 100vh
-- **Background image:** currently hardcoded to `assets/dummy.jpg` via `asset_url`. Swap for a merchant-editable `image_picker` setting once the real hero image is finalized.
-- **Logo:** rendered via `{% render 'logo-frood' %}` — inline SVG with `fill="currentColor"`. Sized to **45vw width**. Color is set via the `--color-accent` token on the parent `.hero-frood-logo` div.
-- **No content other than the image + logo.** No heading, no button, no scroll cue. Brand-locked layout.
-
-When the hero image needs to be merchant-editable, add an `image_picker` setting to the schema and replace the hardcoded `<img>` src.
-
-### `featured-collection.liquid` (rebuilt)
-
-Editorial product grid with stacked heading + CTA.
-
-- **Padding:** `--spacing-m` (24px all sides)
-- **Header** (centered, vertical stack): h1 eyebrow ("Our collection") → h3 heading ("Real food, made simple. Made for modern home cooks.") → primary `.button` ("Our range"). All three are schema-editable.
-- **Product grid breakpoints:**
-  - **Mobile (<600px):** merchant-selectable via schema `mobile_layout` — either `carousel` (horizontal scroll-snap, native CSS, each card 75% width so the next one peeks) or `grid` (single column stacked)
-  - **Tablet (≥600px):** 2 columns
-  - **Desktop (≥900px):** 4 columns
-- **Carousel implementation:** native CSS `scroll-snap-type: x mandatory` + hidden scrollbars. No JS, no embla dependency. The previous `assets/featured-collection-carousel.js` and embla wiring were removed.
-- **Product cards** still rendered via `{% render 'product-card' %}` — the snippet owner is unchanged.
-- **Grid gap:** `--spacing-xs` (12px) — tighter than `--spacing-s` to let pack visuals breathe without dead space.
-
-### Product cards with 3D pack renders
-
-`snippets/product-card.liquid` looks at `product.media` for a 3D model (`media_type == 'model'`). If one's there, it renders with Shopify's `model_viewer_tag` filter (loads Google's `<model-viewer>` web component automatically — no manual script include needed). Falls back to `product.featured_image` for products without a GLB.
-
-- **GLB upload location:** Shopify admin → Products → [product] → Media → "Add 3D model"
-- **Shopify auto-generates a poster image** from the GLB and serves it before the model loads
-- **Browser support:** `<model-viewer>` works in all modern browsers (Chrome/Safari/Firefox/Edge). Older browsers see the poster image only — graceful fallback
-- **Performance note:** Each card with a 3D model is a WebGL context. Grids with many models can be GPU-heavy. If perf becomes an issue: use intersection observer to defer model loading for off-screen cards, or switch to "poster-only until hover" pattern
-
-**No hover effects on cards.** Considered grounded shadow + per-vertex squeeze deformation (see conversation history) but reverted — packs render as plain GLBs with the white-cast fix only (tone-mapping neutral, neutral env-image, no shadow). Easy to revisit if/when designed properly.
-
-### `text-image-split.liquid` (Text + image split)
-
-Two-column section: section-lockup on the left, 50/50 media column on the right with up to 2 media items (image or video each), each with optional captions.
-
-- **Layout:** mobile + tablet (<900px) stack vertically — media under text, both full width, gap `--spacing-m`. Desktop (≥900px) becomes a 2-column grid (`1fr 1fr`).
-- **Text column:** Uses the `.section-lockup` pattern — same eyebrow (h1) + heading (h3) + primary button as featured-collection. Padded with `--spacing-m` and vertically centered within its column.
-- **Media column:** Edge-to-edge, no padding (extends to viewport edge for a dramatic feel). Holds 1–2 media blocks side-by-side with `--spacing-xs` gap. Each media item supports image OR video (video wins if both set), with an optional caption (text-body) `--spacing-xs` below the media.
-- **Video behavior:** autoplays muted + looped + no controls. Common pattern for ambient hero video.
-- **Schema:** 2-block limit on media. Presets include 2 media blocks by default.
-
-The previous starter `image-text.liquid` was removed — it referenced the deleted `.button.secondary` class and had a different schema. Don't try to use it.
-
-### `feature-card.liquid` (Feature Card)
-
-Left-aligned card (max-width **1134px**) that promotes a piece of content from a metaobject + a richtext heading. Sits at the end of the homepage, before the footer.
-
-- **Section padding:** `--spacing-m`
-- **Card:** max-width 1134px, padding `--spacing-m`, border-radius `--rad-s`, **horizontally centered** in the section via `margin-inline: auto`
-- **Two stacked containers inside the card:**
-  1. **Metaobject entry** — title (text-h1) + image + description (text-body) + link (text-ui). Each field is conditionally rendered AND toggleable via section checkboxes.
-  2. **Richtext heading** — displayed with `.text-h2` styling. Semantically a div (not an h2 tag) because richtext outputs `<p>` which is invalid inside h2.
-- **Card colours:** merchant picks `card_bg` AND `card_color` from a `select` setting locked to Frood's 6 brand tokens (off-white, beige, dark burgundy, warm grey, yellow, pale yellow). CSS uses modifier classes like `.card-bg-bg-dark` and `.card-color-text`.
-
-**Wired to the existing `news` metaobject** (defined in Shopify admin, Settings → Custom data → Metaobjects → News). Expected field handles:
-
-- `date` (date)
-- `location` (single line text)
-- `title` (single line text)
-- `news_image` (file reference, image)
-- `news_description` (rich text)
-- `news_link` (URL)
-
-If field handles differ in the admin (Shopify lowercases + snake_cases field names → handles), update the references in `sections/feature-card.liquid` accordingly.
-
-**Why type-locked:** Shopify's `metaobject` schema picker requires a fixed `metaobject_type` — no way to let the merchant pick the type at section level. To feature a different metaobject type (e.g. recipes, press mentions), either duplicate the section file per type, or change the `metaobject_type` value in this one's schema and update the field references.
-
-## Bundle Builder Section
-
-`sections/bundle-builder.liquid` — an interactive "build your box" section ported from a Svelte demo
-(v2, pouch-first). The atomic unit is a single POUCH, not a 4-pack box. A WebGL stage renders a grid
-of boxes, each holding up to 4 pouches in named slot anchors (`Slot0`–`Slot3` in `box.glb`); product
-cards add/remove pouches; a progress bar tracks box-based discount tiers; a cart summary shows
-projected totals.
-
-**State is an ordered list:** `<bundle-builder>` holds `pouches: [variantId, …]` — one entry per
-pouch, order-sensitive. Pouch index i fills box `floor(i / 4)`, slot `i % 4`; removing a pouch
-shifts later pouches up a slot. Per-flavour counts are derived for the cart lines + steppers.
-
-**Files:**
-
-- `sections/bundle-builder.liquid` — markup, co-located stylesheet, schema (collection + box-based
-  quantity settings + `tier` blocks)
-- `assets/bundle-builder.js` — `<bundle-builder>` web component: owns the ordered pouch list,
-  localStorage persistence (`frood.bundle.v2.<sectionId>`), derived totals/tier/discount/boxCount,
-  DOM hydration, checkout. Header comment documents the full expected-markup contract.
-- `assets/bundle-stage.js` — `<bundle-stage>` web component: the three.js scene
-- `assets/three.module.js` + `three.core.js` + `gltf-loader.js` (+ `buffer-geometry-utils.js`,
-  `skeleton-utils.js`) — vendored three.js r184
-- `assets/box.glb` (box mesh + 4 slot anchors) + `assets/pouch.glb` (one pouch mesh) + `box.webp` —
-  vendored models + shared box texture
-
-**Two-component split:** `<bundle-builder>` (state) and `<bundle-stage>` (3D) are standalone per
-theme convention — they communicate only via the `bundle:updated` event on `document`, detail
-`{ pouches: [variantId, …] }` (the ordered pouch list). `<bundle-stage>` derives its own box/slot
-grid from the order. Both also independently read the `.bundle-products` JSON blob in the section
-markup.
-
-**Import map (new theme pattern):** three.js is ESM-only, so `layout/theme.liquid` has a `<scripttype="importmap">` in `<head>` mapping the bare `three` specifier to the vendored `three.module.js`.
-This is the **only** import map in the theme — it must stay high in `<head>` (before any module
-script loads) and there can only be one. Unlike Embla (vendored as a UMD global), three.js is
-consumed as real ES modules. `gltf-loader.js` had its two `three/addons/...` util imports patched to
-relative `./` paths.
-
-**Pouch textures come from a metafield:** each product needs a `custom.pouch_texture` metafield (File
-reference to an image) for its 3D pouch. Products without one fall back to a flat colour — no error.
-
-**Discount tiers are box-based blocks:** each `tier` block sets a minimum in BOXES (1–4) and a %.
-The section converts box minimums to pouch thresholds (`× 4`) before handing them to the JS. Display
--only — the tier % shown is a projection; the real discount must be a Shopify automatic discount
-configured in admin, kept in sync with the tier blocks. Checkout collapses the ordered pouch list to
-per-variant quantities and POSTs them to `/cart/add.js` in one request (shared `_bundle` line-item
-property), then redirects to `/checkout`.
+- **`hero.liquid`** — full-bleed image + centered Frood wordmark (yellow). Brand-locked, no merchant content yet (hero image hardcoded to `dummy.jpg`).
+- **`featured-collection.liquid`** — editorial product grid; section-lockup header + CTA; mobile `carousel`/`grid` toggle (native CSS scroll-snap, no JS). Renders `product-card`.
+- **`product-card` 3D renders** — uses Shopify `model_viewer_tag` when a product has a `model` media item, else `featured_image`. No hover effects on cards.
+- **`text-image-split.liquid`** — section-lockup left, 1–2 image/video media right; stacks <900px.
+- **`feature-card.liquid`** — centered card (max 1134px) promoting a `news` metaobject entry + richtext heading. Metaobject type is locked at the schema level.
+- **`bundle-builder.liquid`** — interactive "build your box". `<bundle-builder>` (ordered pouch-list state + localStorage) and `<bundle-stage>` (three.js WebGL) are standalone, communicating only via `bundle:updated` on `document`. three.js is the theme's **only** import map (in `theme.liquid` `<head>` — there can be just one). Box-based discount tiers are display-only projections; the real discount is a Shopify automatic discount kept in sync in admin. The bundle is a **local draft, not a separate cart** — on "Add to cart" the draft is POSTed to the native Shopify cart (`/cart/add.js`, one request, shared `_bundle` line-item property), the local draft is cleared, and `cart:item-added` fires so the native cart drawer opens. Pouch art comes from a `custom.pouch_texture` metafield (flat-colour fallback).
 
 ## What NOT to Do
 
@@ -556,8 +417,7 @@ property), then redirects to `/checkout`.
 - No utility classes — no `.mt-4`, `.flex`, `.text-center`
 - No `include` tag — always `render`
 - No HTML comments — use `{%- comment -%}`
-- No toast notifications — errors inline near the action
-- No build tools — Shopify CLI only
+- No toasts for field-level validation — those stay inline near the field (action-level feedback uses the toast system)- No build tools — Shopify CLI only
 - No per-section padding/margin merchant controls
 - No `@font-face` in base.css — font faces go in theme.liquid via Liquid `asset_url`
 - No hardcoded user-facing strings — always `{{ 'key' | t }}`
@@ -578,9 +438,10 @@ property), then redirects to `/checkout`.
 
 ## For Deeper Context
 
-| Topic                                                                    | Read                           | Contains                                                                                                                                                                                          |
-| ------------------------------------------------------------------------ | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| CSS patterns, JS components, Liquid conventions, animation, layout, i18n | `conventions/architecture.md`  | Class naming, breakpoints, color schemes, Web Component pattern, event naming, fetch patterns, Section Rendering API, inline settings, whitespace control, Motion library, theme.liquid structure |
-| Cart behavior, add-to-cart, event protocol                               | `conventions/commerce.md`      | Cart event flow, bundled section rendering, quantity selector, error handling, loading states, no-JS fallback                                                                                     |
-| WCAG, keyboard, ARIA, focus management                                   | `conventions/accessibility.md` | Focus trapping pattern, ARIA attributes, heading hierarchy, form accessibility, color contrast, reduced motion, testing checklist                                                                 |
-| Why we chose X over Y                                                    | `conventions/decisions.md`     | Rationale for light DOM, no BEM, vanilla CSS, Embla, no Shadow DOM, no build tools, etc.                                                                                                          |
+| Topic | Read | Contains |
+|---|---|---|
+| Custom Frood section details (layout, breakpoints, schema, gotchas) | `conventions/sections.md` | hero, featured-collection, product-card 3D, text-image-split, feature-card, bundle-builder |
+| CSS patterns, JS components, Liquid conventions, animation, layout, i18n | `conventions/architecture.md` | Class naming, breakpoints, color schemes, Web Component pattern, event naming, fetch patterns, Section Rendering API, inline settings, whitespace control, Motion library, theme.liquid structure |
+| Cart behavior, add-to-cart, event protocol | `conventions/commerce.md` | Cart event flow, bundled section rendering, quantity selector, error handling, loading states, no-JS fallback |
+| WCAG, keyboard, ARIA, focus management | `conventions/accessibility.md` | Focus trapping pattern, ARIA attributes, heading hierarchy, form accessibility, color contrast, reduced motion, testing checklist |
+| Why we chose X over Y | `conventions/decisions.md` | Rationale for light DOM, no BEM, vanilla CSS, Embla, no Shadow DOM, no build tools, etc. |

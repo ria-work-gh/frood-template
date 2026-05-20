@@ -8,12 +8,12 @@
  * fetches server-rendered HTML via Shopify's Section Rendering API and
  * swaps in updated regions (price, buy buttons) marked with
  * data-variant-render attributes. Dispatches 'cart:item-added' on
- * document after successful add. Respects document.body.dataset.cartType
- * to decide whether to let the cart drawer handle opening or redirect
- * to /cart.
+ * document after successful add. Respects document.body.dataset.cartType:
+ * 'page' redirects to /cart; 'drawer' fires a success toast (the cart drawer
+ * no longer auto-opens — it opens on cart-icon click).
  *
  * Expected markup:
- *   <product-form data-section-id="{{ section.id }}">
+ *   <product-form data-section-id="{{ section.id }}" data-added-message="{{ 'products.product.added_to_cart' | t }}">
  *     <script type="application/json" class="product-json">{ "variants": [...] }</script>
  *     <fieldset class="variant-options">...</fieldset>
  *     <quantity-selector>
@@ -36,6 +36,7 @@ class ProductForm extends HTMLElement {
     this.submitButton = this.form.querySelector('[type="submit"]');
     this.errorContainer = this.querySelector('[data-error]');
     this.sectionId = this.dataset.sectionId;
+    this.addedMessage = this.dataset.addedMessage;
     this.renderRequestId = 0;
 
     // Parse the product JSON for variant lookup
@@ -138,8 +139,8 @@ class ProductForm extends HTMLElement {
   /**
    * Handle form submission via AJAX.
    * POST to /cart/add.js with JSON body containing items array.
-   * On success: dispatch 'cart:item-added'. If cart type is 'page', redirect.
-   * On error: show inline error message.
+   * On success: dispatch 'cart:item-added', then redirect to /cart (page mode)
+   * or fire a success toast (drawer mode). On error: show inline error message.
    * @param {SubmitEvent} e
    */
   async handleSubmit(e) {
@@ -182,13 +183,18 @@ class ProductForm extends HTMLElement {
         detail: { sections: data.sections }
       }));
 
-      // Check cart type preference: 'drawer' lets cart-drawer open itself,
-      // 'page' redirects to /cart
+      // Cart type preference: 'page' redirects to /cart; 'drawer' shows a
+      // success toast (the cart drawer no longer auto-opens — it opens on
+      // cart-icon click). This is a classic script, so we dispatch the
+      // toast:show event directly rather than importing showToast().
       const cartType = document.body.dataset.cartType;
       if (cartType === 'page') {
         window.location.href = '/cart';
+      } else {
+        document.dispatchEvent(new CustomEvent('toast:show', {
+          detail: { message: this.addedMessage || 'Added to cart', variant: 'success' }
+        }));
       }
-      // If 'drawer', cart-drawer listens for 'cart:item-added' and opens itself
 
     } catch (error) {
       this.showError(error.message);

@@ -1,10 +1,16 @@
 /**
  * <cart-icon> — header cart link.
  *
- * Shows the Shopify cart item count. Clicking opens the <cart-drawer>.
- * Listens for cart:item-added and cart:updated to update the count, reading
- * it from event.detail.cart.item_count when present; falls back to a /cart.js
- * fetch if the event lacks a cart payload.
+ * Shows the native Shopify cart count. The initial value is server-rendered
+ * by sections/header.liquid as `{{ cart.item_count }}`; this component keeps
+ * it in sync by listening on `document`:
+ *
+ *   'cart:updated'      detail.cart.item_count → updateCount
+ *   'cart:item-added'   fetch /cart.js → updateCount
+ *
+ * When body[data-cart-type="drawer"], clicking the link opens the
+ * <cart-drawer> instead of navigating to /cart. When body[data-cart-type
+ * ="page"], the native href navigation runs.
  *
  * Uses a data-aria-template attribute (populated via Liquid translation) to
  * keep the aria-label localized when the count updates dynamically.
@@ -12,7 +18,7 @@
  * Expected markup:
  *   <cart-icon data-aria-template="{{ 'accessibility.cart_count' | t: count: '__COUNT__' }}">
  *     <a href="{{ routes.cart_url }}" class="header-cart" aria-label="…">
- *       Cart (<span class="cart-count">0</span>)
+ *       Cart (<span class="cart-count">{{ cart.item_count }}</span>)
  *     </a>
  *   </cart-icon>
  */
@@ -23,34 +29,39 @@ class CartIcon extends HTMLElement {
     this.clickTarget = this.querySelector('a') || this.querySelector('button');
     this.ariaTemplate = this.dataset.ariaTemplate;
 
-    if (this.clickTarget) {
+    // In drawer mode, intercept clicks to open the global cart drawer.
+    if (this.clickTarget && document.body.dataset.cartType === 'drawer') {
       this.clickTarget.addEventListener('click', (e) => {
+        const drawer = document.querySelector('cart-drawer');
+        if (!drawer) return;
         e.preventDefault();
-        document.querySelector('cart-drawer')?.open();
+        drawer.open();
       });
     }
 
-    this._onCartChanged = (e) => this.updateFromEvent(e);
-    document.addEventListener('cart:item-added', this._onCartChanged);
-    document.addEventListener('cart:updated', this._onCartChanged);
+    this._onCartUpdated = (e) => {
+      const count = e.detail?.cart?.item_count;
+      if (typeof count === 'number') this.updateCount(count);
+    };
+    this._onItemAdded = () => this.fetchCount();
+
+    document.addEventListener('cart:updated', this._onCartUpdated);
+    document.addEventListener('cart:item-added', this._onItemAdded);
   }
 
   disconnectedCallback() {
-    document.removeEventListener('cart:item-added', this._onCartChanged);
-    document.removeEventListener('cart:updated', this._onCartChanged);
+    document.removeEventListener('cart:updated', this._onCartUpdated);
+    document.removeEventListener('cart:item-added', this._onItemAdded);
   }
 
-  async updateFromEvent(e) {
-    const count = e.detail?.cart?.item_count;
-    if (typeof count === 'number') {
-      this.updateCount(count);
-      return;
-    }
+  async fetchCount() {
     try {
-      const cart = await fetch('/cart.js').then((r) => r.json());
+      const response = await fetch('/cart.js');
+      if (!response.ok) return;
+      const cart = await response.json();
       this.updateCount(cart.item_count);
-    } catch (err) {
-      console.error('[cart-icon] failed to fetch /cart.js', err);
+    } catch {
+      /* network blip — leave the count stale */
     }
   }
 

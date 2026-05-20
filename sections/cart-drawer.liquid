@@ -1,7 +1,14 @@
 {%- comment -%}
-  Cart drawer — floating "island" overlay anchored under the header cart link.
-  Renders the Shopify-native cart: line items + totals + checkout. Refreshes
-  itself from bundled section HTML on cart:item-added / cart:updated.
+  Cart drawer — a floating "island" overlay that scales in from the top-right.
+  Renders the native Shopify cart (cart-items + cart-totals, or cart-empty),
+  refreshed via Shopify's Section Rendering API. Listens on `document` for
+  `cart:item-added` and `cart:updated` — both swap the body; neither auto-opens
+  the drawer (add-to-cart shows a success toast, and the drawer opens on
+  cart-icon click). Quantity changes and removes inside the drawer go through
+  the embedded <cart-items> component (assets/cart-items.js).
+
+  Section id `cart-drawer` is the key for ?section_id=cart-drawer and
+  bundled-sections POST bodies (`sections: ['cart-drawer']`).
 {%- endcomment -%}
 <cart-drawer id="cart-drawer" class="cart-drawer" role="dialog" aria-modal="true" aria-hidden="true" aria-label="{{ 'cart.drawer.title' | t }}">
   <div class="cart-drawer-overlay" data-overlay></div>
@@ -12,7 +19,7 @@
         {% render 'icon-close' %}
       </button>
     </div>
-    <div class="cart-drawer-content" data-cart-content>
+    <div class="cart-drawer-content" data-drawer-body>
       <cart-items>
         {%- if cart.item_count > 0 -%}
           {% render 'cart-items', cart: cart %}
@@ -28,6 +35,8 @@
 <script type="module" src="{{ 'cart-items.js' | asset_url }}"></script>
 <script type="module" src="{{ 'quantity-selector.js' | asset_url }}"></script>
 <script type="module" src="{{ 'cart-drawer.js' | asset_url }}"></script>
+<script src="{{ 'cart-items.js' | asset_url }}" defer></script>
+<script src="{{ 'quantity-selector.js' | asset_url }}" defer></script>
 
 {% stylesheet %}
   .cart-drawer {

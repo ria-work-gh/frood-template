@@ -32,8 +32,8 @@ All cart state changes broadcast via custom events on `document`:
 ### Event Flow
 
 ```
-product-form → POST /cart/add.js → dispatches cart:item-added
-  → cart-drawer listens → refresh() via section fetch + open()
+product-form → POST /cart/add.js → dispatches cart:item-added + success toast (drawer mode)
+  → cart-drawer listens → refresh() via section fetch (no auto-open; opens on cart-icon click)
   → cart-icon listens → updateCount()
 
 cart-items → quantity change or remove → POST /cart/change.js
@@ -51,7 +51,7 @@ cart-items → quantity change or remove → POST /cart/change.js
 1. User clicks "Add to cart" button
 2. Button gets `is-loading` class + `disabled` attribute
 3. `product-form` component POSTs to `/cart/add.js` via fetch
-4. On success: dispatches `cart:item-added`, cart drawer opens
+4. On success: dispatches `cart:item-added`; the drawer refreshes but does NOT auto-open — a success toast confirms instead (page mode redirects to /cart)
 5. On failure: inline error message appears below button
 6. Finally: loading state cleared
 
@@ -97,11 +97,11 @@ Quantity inputs and remove buttons submit the form traditionally when JS is unav
 
 ---
 
-## Error Handling
+## Error & Feedback Handling
 
-**Principle:** Inline errors near the triggering action. No toast notifications.
+**Principle:** Choose the channel by scope. **Field-level validation stays inline** near the triggering field. **Action-level feedback** (success confirmations + failures with no single field to attach to) uses a **toast** (`toast:show` → `<toast-region>`; see `assets/toast.js`).
 
-### Pattern
+### Inline pattern (field-level)
 
 ```liquid
 <product-form>
@@ -115,14 +115,23 @@ Quantity inputs and remove buttons submit the form traditionally when JS is unav
 - Error text set via `textContent` (not `innerHTML`)
 - Clear error before each new action attempt
 
+### Toast pattern (action-level)
+
+```js
+import { showToast } from './toast.js';
+showToast('Added to bag', { variant: 'success' });
+showToast('Something went wrong. Please try again.', { variant: 'error' });
+```
+
 ### Common Errors
 
-| Error | Message | Location |
-|-------|---------|----------|
-| Out of stock | "This item is sold out" | Below add-to-cart button |
-| Quantity exceeds inventory | "Only X available" | Near quantity selector |
-| Network failure | "Something went wrong. Please try again." | Below triggering button |
-| Cart limit reached | "Cart limit reached" | Below add-to-cart button |
+| Error | Message | Channel / Location |
+|-------|---------|--------------------|
+| Out of stock | "This item is sold out" | **Inline** — below add-to-cart button |
+| Quantity exceeds inventory | "Only X available" | **Inline** — near quantity selector |
+| Network failure | "Something went wrong. Please try again." | **Toast** (error) |
+| Cart limit reached | "Cart limit reached" | **Toast** (error) |
+| Add-to-cart success | "Added to bag" | **Toast** (success) |
 
 ---
 

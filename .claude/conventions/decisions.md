@@ -48,8 +48,8 @@
 | Decision | Choice | Rationale |
 |----------|--------|-----------|
 | **Cart UI** | Drawer + Page | Quick access via drawer; page as fallback and for accessibility |
-| **Add to cart** | Opens drawer automatically | Immediate feedback, encourages checkout |
-| **Error display** | Inline messages | Contextual, near the action; no toast notifications |
+| **Add to cart** | Success toast confirms; drawer opens on cart-icon click | Immediate feedback without yanking the drawer open on every add; page mode redirects to /cart |
+| **Feedback display** | Inline (field-level) + toast (action-level) | Field validation stays contextual near the field; action-level success/failure with no single field to attach to uses the global `<toast-region>` (`toast:show`). Superseded the original "inline only, no toasts" rule. |
 | **Variant strategy** | Native Shopify variants | Size + Color as variant options; well within 100-variant limit |
 | **Sold out variants** | Dimmed but selectable | Users can still view details, sign up for notifications |
 | **Quick view** | Not included | Keep simple; direct to PDP provides better experience |

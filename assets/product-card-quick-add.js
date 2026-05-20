@@ -2,10 +2,9 @@
   <product-card-quick-add>
 
   Lightweight quick-add for product cards. Intercepts the wrapped <form>'s
-  submission, POSTs the first variant to /cart/add.js (with sections=cart-drawer
-  for the bundled drawer HTML), then fetches /cart.js for the updated cart
-  totals. Dispatches 'cart:item-added' with { cart, sections } so cart-drawer
-  and cart-icon can update synchronously.
+  submission, POSTs to /cart/add.js for the default variant, and dispatches
+  'cart:item-added' so the cart icon updates and the drawer refreshes (it no
+  longer auto-opens). On success, shows an "Added to cart" toast.
 
   Why a separate component (not <product-form>): the PDP form handles variant
   selectors, quantity input, server-rendered region swaps, and product JSON
@@ -14,7 +13,7 @@
 
   Expected markup (emitted by snippets/product-card.liquid):
 
-    <product-card-quick-add>
+    <product-card-quick-add data-added-message="{{ 'products.product.added_to_cart' | t }}">
       <form action="/cart/add" method="post">
         <input type="hidden" name="id" value="{{ variant.id }}">
         <button type="submit" class="button">Shop now</button>
@@ -25,12 +24,15 @@
   browser navigates to /cart after submit. Works without the component.
 */
 
+import { showToast } from './toast.js';
+
 class ProductCardQuickAdd extends HTMLElement {
   connectedCallback() {
     this.form = this.querySelector('form');
     if (!this.form) return;
 
     this.button = this.form.querySelector('button[type="submit"]');
+    this.addedMessage = this.dataset.addedMessage;
     this.handleSubmit = this.handleSubmit.bind(this);
     this.form.addEventListener('submit', this.handleSubmit);
   }
@@ -76,9 +78,12 @@ class ProductCardQuickAdd extends HTMLElement {
         detail: { sections: addData.sections }
       }));
 
-      // If cart type is 'page' (not drawer), redirect — matches product-form.js
+      // Page mode redirects to /cart; drawer mode shows a success toast
+      // (the cart drawer no longer auto-opens). Matches product-form.js.
       if (document.body.dataset.cartType === 'page') {
         window.location.href = '/cart';
+      } else {
+        showToast(this.addedMessage || 'Added to cart', { variant: 'success' });
       }
     } catch (err) {
       console.error('[product-card-quick-add]', err);

@@ -38,6 +38,7 @@
   "products": {
     "product": {
       "add_to_cart": "Add to cart",
+      "added_to_cart": "Added to cart",
       "sold_out": "Sold out",
       "sale": "Sale",
       "price": "Price",
@@ -179,6 +180,7 @@
   "accessibility": {
     "skip_to_content": "Skip to content",
     "close": "Close",
+    "dismiss": "Dismiss notification",
     "cart_count": "Cart ({{ count }} items)",
     "loading": "Loading",
     "previous_slide": "Previous slide",
@@ -242,7 +244,8 @@
       "empty_stage": "Add pouches to fill your box",
       "subtotal": "Subtotal (without discount)",
       "price": "Price",
-      "checkout": "Checkout",
+      "add_to_cart": "Add to cart",
+      "added_to_cart": "Added to cart",
       "progress_headline": "You are almost there:",
       "progress_headline_max": "Max discount unlocked!",
       "progress_detail": "Add {count} more {pouch} and save {pct}%",
