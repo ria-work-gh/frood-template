@@ -22,8 +22,8 @@ import { GLTFLoader } from './gltf-loader.js';
   (no darkening where the bag's own faces/folds stack up).
 
   ----------------------------------------------------------------------------
-  Event contract — consumes `bundle:updated` dispatched by <bundle-builder> on
-  document:
+  Event contract — consumes `bundle:updated` dispatched by bundle-store.js
+  (driven by <bundle-builder>) on document:
 
     detail: { pouches: [variantId, …] }   (ordered, one entry per pouch)
 

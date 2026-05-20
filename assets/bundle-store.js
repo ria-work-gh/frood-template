@@ -281,6 +281,7 @@ class BundleStore {
       properties: { _bundle: this.bundleId }
     }));
 
+<<<<<<< HEAD
     const response = await fetch('/cart/add.js', {
       method: 'POST',
       headers: {
@@ -289,6 +290,21 @@ class BundleStore {
       },
       body: JSON.stringify({ items })
     });
+=======
+    let response;
+    try {
+      response = await fetch('/cart/add.js', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify({ items, sections: ['cart-drawer'] })
+      });
+    } catch (networkError) {
+      throw new Error(this._errorMessage(`Network error: ${networkError.message}`));
+    }
+>>>>>>> 97988e9 (Audit fixes: remove double script load, dead mobile-menu.js, bundle section payload)
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
@@ -301,7 +317,20 @@ class BundleStore {
     this.pouches = [];
     this.save();
 
+<<<<<<< HEAD
     window.location.href = '/checkout';
+=======
+    document.dispatchEvent(
+      new CustomEvent('cart:item-added', {
+        detail: { items: data.items || items, sections: data.sections }
+      })
+    );
+  }
+
+  _errorMessage(detail) {
+    const fallback = this.config && this.config.i18n && this.config.i18n.error;
+    return fallback ? `${fallback} (${detail})` : detail;
+>>>>>>> 97988e9 (Audit fixes: remove double script load, dead mobile-menu.js, bundle section payload)
   }
 }
 
