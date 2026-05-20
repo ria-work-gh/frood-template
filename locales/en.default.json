@@ -237,25 +237,17 @@
       "heading": "You may also like"
     },
     "bundle_builder": {
-      "your_box": "Your Box",
-      "empty_cart": "Your box is empty. Add a pouch to get started.",
-      "empty_stage": "Add pouches to fill your box",
-      "subtotal": "Subtotal (without discount)",
       "price": "Price",
-      "checkout": "Checkout",
-      "progress_headline": "You are almost there:",
-      "progress_headline_max": "Max discount unlocked!",
-      "progress_detail": "Add {count} more {pouch} and save {pct}%",
-      "progress_detail_max": "You're saving {pct}%",
-      "pouch": "pouch",
-      "pouches": "pouches",
-      "box": "box",
-      "boxes": "boxes",
-      "slots_per_box": "{count} slots per box",
+      "add_to_cart": "Add to cart",
+      "add_more": "Add {count} more",
+      "added": "Box added to cart",
+      "caption": "A box of {{ count }} — mix any flavours.",
+      "empty_stage": "Add packs to fill your box",
+      "no_flavours": "No flavours yet.",
+      "contents_property": "Flavours",
       "decrease": "Remove one {{ name }}",
       "increase": "Add one {{ name }}",
-      "remove_item": "Remove {name}",
-      "checkout_error": "Sorry, we couldn't add your bundle to the cart. Please try again."
+      "checkout_error": "Sorry, we couldn't add your box to the cart. Please try again."
     }
   },
   "share": {

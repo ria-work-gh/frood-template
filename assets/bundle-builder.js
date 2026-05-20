@@ -1,109 +1,187 @@
 /*
-  <bundle-builder> — view component for the bundle builder section (v2).
+  <bundle-builder> — state + controls for the v3 "build your box" section.
 
-  State, persistence, derived totals/tiers/discount and add-to-cart all live
-  in the shared store (assets/bundle-store.js). This element is a thin view:
-  it parses the section markup into a config object and hands it to the store
-  (hydrateConfig), then renders three pieces of bundle-page-only UI on every
-  'bundle:updated' — the product-card steppers, the discount progress bar,
-  and the "Your Box" draft panel. The panel itself is the snippet
-  (snippets/bundle-cart.liquid), rendered by the shared renderer
-  (assets/bundle-cart-view.js).
+  Owns ONE draft box: an ordered list of packs (one entry per pack), capped at
+  `capacity` (4). Each pack carries a stable session-local `key` so the
+  visualiser can keep its identity across add/remove. The newest pack is the
+  front of the visual stack. Order is add-order: box[0] oldest, box[last] newest.
 
-  Clicks on add/remove/clear controls and the [data-add-to-cart] button are
-  delegated to the store. On successful add the store dispatches
-  `cart:item-added`, which the native <cart-drawer> picks up to refresh and
-  open over the page.
+  Unlike the old v2 store, there is NO multi-box draft, no discount tiers, and
+  no cross-page shared state — the box lives only here. When the box is full,
+  "Add to cart" POSTs the single box product to the NATIVE Shopify cart with the
+  chosen flavours as a line-item property, clears the draft, and fires
+  `cart:item-added` (+ a success toast) exactly like product-form.js. The native
+  <cart-drawer> / <cart-icon> pick that up — the bundle is never the cart.
 
   ----------------------------------------------------------------------------
   Expected markup (produced by sections/bundle-builder.liquid):
 
     <bundle-builder
-      data-section-id  data-currency  data-slots-per-box
-      data-target-qty (pouches)  data-max-qty (pouches)
-      data-tiers='[{"min":8,"pct":0.1}, …]'   (JSON, min in POUCHES, pct fraction)
-      data-i18n-progress-headline  data-i18n-progress-headline-max
-      data-i18n-progress-detail    data-i18n-progress-detail-max
-      data-i18n-pouch  data-i18n-pouches  data-i18n-box  data-i18n-boxes
-      data-i18n-slots-per-box  data-i18n-error>
+      data-section-id  data-capacity="4"  data-box-variant-id
+      data-i18n-add  data-i18n-add-more  data-i18n-added
+      data-i18n-contents  data-i18n-error>
 
-      <script type="application/json" class="bundle-products">
-        [{ id, handle, title, size, price (minor units), textureUrl }, …]
+      <script type="application/json" class="bundle-flavours">
+        [{ id, name, notes, image }, …]            (id = metaobject handle)
       </script>
 
-      [data-product-list]
-        [data-product-card][data-variant-id]      (one per product)
-          [data-qty]                              (qty readout)
-          [data-action="add"|"remove"][data-variant-id]
-      [data-progress]
-        [data-progress-headline] [data-progress-detail] [data-progress-count]
-        [data-progress-bar] > [data-progress-fill]
-        [data-progress-boxes]
-      [data-cart]                                 ({% render 'bundle-cart' %})
+      [data-flavour-list]
+        [data-flavour-card][data-flavour-id]        (one per flavour)
+          [data-qty="<id>"]                         (qty readout)
+          [data-action="add"|"remove"][data-flavour-id]
+      [data-add] > [data-add-label]                 (add-to-cart button)
+      [data-error]                                  (inline error, role=alert)
+
+  ----------------------------------------------------------------------------
+  Event contract — dispatched on `document`:
+
+    'bundle:updated'  detail: {
+      box:      [{ key, id, image }, …],   // ordered, newest last
+      counts:   { [id]: qty },
+      filled:   number,
+      capacity: number,
+      isFull:   boolean
+    }
+
+  Emitted on every mutation and on connect. <bundle-stage> renders from it.
+  The store also answers 'bundle:request-state' by re-emitting — the handshake
+  for <bundle-stage>, whose module may upgrade after this one.
+
+  localStorage: single key `frood.bundle.v3.<sectionId>` — stores flavour ids
+  only (keys are ephemeral). Filtered to known flavours + capped on load.
 */
-import { bundleStore } from './bundle-store.js';
-import { renderBundleCart } from './bundle-cart-view.js';
-import { showToast } from './toast.js';
 
 class BundleBuilder extends HTMLElement {
   connectedCallback() {
-    this.slotsPerBox = parseInt(this.dataset.slotsPerBox, 10) || 4;
-    // data-target-qty / data-max-qty arrive already converted to pouches.
-    this.targetQty = parseInt(this.dataset.targetQty, 10) || this.slotsPerBox;
-    this.maxQty = parseInt(this.dataset.maxQty, 10) || this.slotsPerBox * 4;
+    this.capacity = parseInt(this.dataset.capacity, 10) || 4;
+    this.boxVariantId = this.dataset.boxVariantId || null;
+    this.storageKey = `frood.bundle.v3.${this.dataset.sectionId || 'default'}`;
+    this.keySeq = 0;
 
-    // DOM refs
-    this.cartPanel = this.querySelector('[data-cart]');
-    this.addButton = this.querySelector('[data-add-to-cart]');
-    this.errorContainer = this.querySelector('[data-error]');
+    this.flavours = this.parseFlavours();
+    this.box = this.loadDraft();
+
+    this.addButton = this.querySelector('[data-add]');
+    this.addLabel = this.querySelector('[data-add-label]');
+    this.errorEl = this.querySelector('[data-error]');
 
     this._onClick = (e) => this.handleClick(e);
     this.addEventListener('click', this._onClick);
 
-    this._onBundleUpdated = () => this.render();
-    document.addEventListener('bundle:updated', this._onBundleUpdated);
+    this._onRequestState = () => this.emit();
+    document.addEventListener('bundle:request-state', this._onRequestState);
 
-    // Hand the store everything it needs to run anywhere — including pages
-    // without this section, since the store persists the config. This emits
-    // 'bundle:updated', which our listener above turns into the first render.
-    bundleStore.hydrateConfig(this.parseConfig());
+    this.render();
+    this.emit();
   }
 
   disconnectedCallback() {
     this.removeEventListener('click', this._onClick);
-    document.removeEventListener('bundle:updated', this._onBundleUpdated);
+    document.removeEventListener('bundle:request-state', this._onRequestState);
   }
 
-  // ---- Config -----------------------------------------------------------
+  // ---- Config / persistence --------------------------------------------
 
-  parseConfig() {
-    let tiers = [];
+  parseFlavours() {
+    const map = {};
+    const blob = this.querySelector('.bundle-flavours');
+    if (!blob) return map;
     try {
-      tiers = JSON.parse(this.dataset.tiers || '[]') || [];
-    } catch {
-      tiers = [];
+      for (const f of JSON.parse(blob.textContent)) {
+        if (f && f.id != null) map[String(f.id)] = f;
+      }
+    } catch (err) {
+      console.error('[bundle-builder] failed to parse flavours blob:', err);
     }
+    return map;
+  }
 
-    const products = {};
-    const blob = this.querySelector('.bundle-products');
-    if (blob) {
-      try {
-        for (const p of JSON.parse(blob.textContent)) {
-          if (p && p.id != null) products[String(p.id)] = p;
-        }
-      } catch (err) {
-        console.error('[bundle-builder] failed to parse products blob:', err);
+  loadDraft() {
+    let raw;
+    try {
+      raw = window.localStorage.getItem(this.storageKey);
+    } catch {
+      return [];
+    }
+    if (!raw) return [];
+    try {
+      const ids = JSON.parse(raw);
+      if (!Array.isArray(ids)) return [];
+      return ids
+        .filter((id) => typeof id === 'string' && this.flavours[id])
+        .slice(0, this.capacity)
+        .map((id) => ({ key: this.keySeq++, id }));
+    } catch {
+      return [];
+    }
+  }
+
+  save() {
+    try {
+      window.localStorage.setItem(this.storageKey, JSON.stringify(this.box.map((p) => p.id)));
+    } catch {
+      /* storage unavailable — non-fatal */
+    }
+  }
+
+  // ---- Derived ----------------------------------------------------------
+
+  get filled() {
+    return this.box.length;
+  }
+
+  get isFull() {
+    return this.box.length >= this.capacity;
+  }
+
+  get counts() {
+    const out = {};
+    for (const p of this.box) out[p.id] = (out[p.id] || 0) + 1;
+    return out;
+  }
+
+  // ---- Mutations --------------------------------------------------------
+
+  add(id) {
+    if (!this.flavours[id]) return;
+    if (this.box.length >= this.capacity) return;
+    this.box.push({ key: this.keySeq++, id });
+    this.commit();
+  }
+
+  // Removes the LAST-added pack of this flavour — drives the per-flavour stepper.
+  remove(id) {
+    for (let i = this.box.length - 1; i >= 0; i--) {
+      if (this.box[i].id === id) {
+        this.box.splice(i, 1);
+        break;
       }
     }
+    this.commit();
+  }
 
-    return {
-      products,
-      tiers,
-      currency: this.dataset.currency || 'USD',
-      slotsPerBox: this.slotsPerBox,
-      maxQty: this.maxQty,
-      i18n: { error: this.dataset.i18nError || 'Could not add to cart' }
-    };
+  commit() {
+    this.save();
+    this.render();
+    this.emit();
+  }
+
+  emit() {
+    document.dispatchEvent(
+      new CustomEvent('bundle:updated', {
+        detail: {
+          box: this.box.map((p) => ({
+            key: p.key,
+            id: p.id,
+            image: this.flavours[p.id]?.image || ''
+          })),
+          counts: this.counts,
+          filled: this.filled,
+          capacity: this.capacity,
+          isFull: this.isFull
+        }
+      })
+    );
   }
 
   // ---- Events -----------------------------------------------------------
@@ -111,58 +189,22 @@ class BundleBuilder extends HTMLElement {
   handleClick(e) {
     const trigger = e.target.closest('[data-action]');
     if (trigger && this.contains(trigger)) {
-      const { action, variantId } = trigger.dataset;
-      if (action === 'add') bundleStore.add(variantId);
-      else if (action === 'remove') bundleStore.remove(variantId);
-      else if (action === 'clear') bundleStore.clear(variantId);
+      const { action, flavourId } = trigger.dataset;
+      if (action === 'add') this.add(flavourId);
+      else if (action === 'remove') this.remove(flavourId);
       return;
     }
-    const add = e.target.closest('[data-add-to-cart]');
-    if (add && this.contains(add)) this.addToCart();
-  }
-
-  async addToCart() {
-    if (bundleStore.totalQty === 0 || !this.addButton) return;
-    this.clearError();
-    this.addButton.classList.add('is-loading');
-    this.addButton.disabled = true;
-
-    try {
-      await bundleStore.addToCart();
-      showToast(this.dataset.i18nAdded || 'Added to cart', { variant: 'success' });
-    } catch (error) {
-      this.showError(error.message);
-    } finally {
-      this.addButton.classList.remove('is-loading');
-      this.addButton.disabled = false;
-    }
-  }
-
-  showError(message) {
-    if (!this.errorContainer) return;
-    this.errorContainer.textContent = message;
-    this.errorContainer.hidden = false;
-  }
-
-  clearError() {
-    if (!this.errorContainer) return;
-    this.errorContainer.textContent = '';
-    this.errorContainer.hidden = true;
+    if (e.target.closest('[data-add]') && this.isFull) this.addToCart();
   }
 
   // ---- Rendering --------------------------------------------------------
 
   render() {
-    this.renderCards();
-    this.renderProgress();
-    if (this.cartPanel) renderBundleCart(this.cartPanel, bundleStore.snapshot);
-  }
+    const counts = this.counts;
+    const atCap = this.isFull;
 
-  renderCards() {
-    const atCap = bundleStore.totalQty >= this.maxQty;
-    const counts = bundleStore.counts;
-    this.querySelectorAll('[data-product-card]').forEach((card) => {
-      const id = card.dataset.variantId;
+    this.querySelectorAll('[data-flavour-card]').forEach((card) => {
+      const id = card.dataset.flavourId;
       const qty = counts[id] || 0;
       const qtyEl = card.querySelector('[data-qty]');
       if (qtyEl) qtyEl.textContent = qty;
@@ -172,75 +214,103 @@ class BundleBuilder extends HTMLElement {
       if (addBtn) addBtn.disabled = atCap;
       if (removeBtn) removeBtn.disabled = qty === 0;
     });
+
+    if (this.addButton) this.addButton.disabled = !atCap || !this.boxVariantId;
+    if (this.addLabel) {
+      if (atCap) {
+        this.addLabel.textContent = this.dataset.i18nAdd || 'Add to cart';
+      } else {
+        const remaining = this.capacity - this.filled;
+        const tmpl = this.dataset.i18nAddMore || 'Add {count} more';
+        this.addLabel.textContent = tmpl.replace('{count}', remaining);
+      }
+    }
   }
 
-  renderProgress() {
-    const progress = this.querySelector('[data-progress]');
-    if (!progress) return;
+  // ---- Add to cart (native Shopify cart) --------------------------------
 
-    const totalQty = bundleStore.totalQty;
-    const nextTier = bundleStore.nextTier;
-    const tier = bundleStore.tier;
-    const target = nextTier ? nextTier.min : this.targetQty;
-    const pct = target > 0 ? Math.min(100, (totalQty / target) * 100) : 0;
+  // Builds a readable "Flavours" line-item property from the box contents,
+  // ordered by the flavour list, e.g. "2 × Mexi Fiesta Blend, 2 × Golden Curry".
+  contentsProperty() {
+    const counts = this.counts;
+    const parts = [];
+    for (const id of Object.keys(this.flavours)) {
+      const qty = counts[id];
+      if (qty) parts.push(`${qty} × ${this.flavours[id].name}`);
+    }
+    return parts.join(', ');
+  }
 
-    let headline;
-    let detail;
-    if (!nextTier) {
-      headline = this.dataset.i18nProgressHeadlineMax || 'Max discount unlocked!';
-      detail = (this.dataset.i18nProgressDetailMax || "You're saving {pct}%").replace(
-        '{pct}',
-        Math.round((tier ? tier.pct : 0) * 100)
+  async addToCart() {
+    if (!this.isFull || !this.boxVariantId) return;
+    this.clearError();
+    this.addButton.classList.add('is-loading');
+    this.addButton.disabled = true;
+
+    const contentsLabel = this.dataset.i18nContents || 'Flavours';
+    const item = {
+      id: parseInt(this.boxVariantId, 10),
+      quantity: 1,
+      properties: { [contentsLabel]: this.contentsProperty() }
+    };
+
+    try {
+      const response = await fetch('/cart/add.js', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify({ items: [item], sections: ['cart-drawer'] })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.description || this.dataset.i18nError || 'Could not add to cart');
+      }
+
+      const data = await response.json();
+
+      // Box is now in the native cart — drop the local draft so returning to
+      // the page doesn't re-add it.
+      this.box = [];
+      this.save();
+      this.render();
+      this.emit();
+
+      // Same contract as product-form.js: refresh the drawer from the bundled
+      // section, then page-redirect or success-toast per the cart-type pref.
+      document.dispatchEvent(
+        new CustomEvent('cart:item-added', { detail: { sections: data.sections } })
       );
-    } else {
-      headline = this.dataset.i18nProgressHeadline || 'You are almost there:';
-      const togo = nextTier.min - totalQty;
-      const pouch =
-        togo === 1
-          ? this.dataset.i18nPouch || 'pouch'
-          : this.dataset.i18nPouches || 'pouches';
-      detail = (this.dataset.i18nProgressDetail || 'Add {count} more {pouch} and save {pct}%')
-        .replace('{count}', togo)
-        .replace('{pouch}', pouch)
-        .replace('{pct}', Math.round(nextTier.pct * 100));
+
+      if (document.body.dataset.cartType === 'page') {
+        window.location.href = '/cart';
+      } else {
+        document.dispatchEvent(
+          new CustomEvent('toast:show', {
+            detail: { message: this.dataset.i18nAdded || 'Box added to cart', variant: 'success' }
+          })
+        );
+      }
+    } catch (error) {
+      this.showError(error.message);
+    } finally {
+      this.addButton.classList.remove('is-loading');
+      this.addButton.disabled = !this.isFull || !this.boxVariantId;
     }
-
-    this.setText(progress, '[data-progress-headline]', headline);
-    this.setText(progress, '[data-progress-detail]', detail);
-    this.setText(progress, '[data-progress-count]', `${totalQty}/${target}`);
-
-    const fill = progress.querySelector('[data-progress-fill]');
-    if (fill) fill.style.width = `${pct}%`;
-
-    const bar = progress.querySelector('[data-progress-bar]');
-    if (bar) {
-      bar.setAttribute('aria-valuenow', totalQty);
-      bar.setAttribute('aria-valuemax', target);
-    }
-
-    this.setText(progress, '[data-progress-boxes]', this.boxLabel());
   }
 
-  // "3 pouches · 1 box · 4 slots per box"
-  boxLabel() {
-    const totalQty = bundleStore.totalQty;
-    const boxCount = bundleStore.boxCount;
-    const pouchWord =
-      totalQty === 1
-        ? this.dataset.i18nPouch || 'pouch'
-        : this.dataset.i18nPouches || 'pouches';
-    const boxWord =
-      boxCount === 1 ? this.dataset.i18nBox || 'box' : this.dataset.i18nBoxes || 'boxes';
-    const slots = (this.dataset.i18nSlotsPerBox || '{count} slots per box').replace(
-      '{count}',
-      this.slotsPerBox
-    );
-    return `${totalQty} ${pouchWord} · ${boxCount} ${boxWord} · ${slots}`;
+  showError(message) {
+    if (!this.errorEl) return;
+    this.errorEl.textContent = message;
+    this.errorEl.hidden = false;
   }
 
-  setText(root, selector, text) {
-    const el = root.querySelector(selector);
-    if (el) el.textContent = text;
+  clearError() {
+    if (!this.errorEl) return;
+    this.errorEl.textContent = '';
+    this.errorEl.hidden = true;
   }
 }
 

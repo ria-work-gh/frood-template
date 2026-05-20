@@ -1,289 +1,243 @@
 {%- comment -%}
-  Bundle Builder — interactive "build your box" section ported from the Svelte demo (v2).
+  Bundle Builder — interactive "build your box" section (v3, box-first).
 
-  V2 model — pouch-first. The atomic unit is a single POUCH, not a 4-pack box. A
-  WebGL stage (<bundle-stage>) renders a grid of boxes, each holding up to 4
-  pouches in named slot anchors; product cards add/remove pouches; a progress bar
-  tracks box-based discount tiers; a cart summary shows projected totals. State
-  lives in <bundle-builder> (assets/bundle-builder.js) — an ordered list of
-  pouches — and is persisted to localStorage.
+  The shopper fills ONE fixed box of BOX_CAPACITY (4) packs by mixing flavours,
+  then adds the whole box to the native Shopify cart as a SINGLE line item at a
+  flat price. There are no discount tiers and no multi-box draft — that was the
+  old pouch-first v2 model.
 
-  The merchant's collection should contain SINGLE-POUCH products (each variant a
-  single priced pouch), not 4-packs — the builder sells pouches individually.
+  Two standalone web components, communicating only via `bundle:updated` on
+  `document` (theme convention — see conventions/sections.md):
 
-  Discount tiers are box-based and DISPLAY-ONLY: each tier block sets a minimum
-  in BOXES and a %; the section converts box minimums to pouch thresholds for
-  the JS. Configure a matching Shopify automatic discount in admin and keep it
-  in sync with the tier blocks below.
+    <bundle-builder> (assets/bundle-builder.js)
+      Owns the draft box (ordered list of packs, capped at capacity) + its
+      localStorage persistence, the per-flavour steppers, and "Add to cart".
+      Reads the .bundle-flavours JSON blob below for flavour name/notes/image.
 
-  Pouch textures come from a per-product metafield: custom.pouch_texture, a File
-  reference to an image. Products without one fall back to a flat colour.
+    <bundle-stage> (assets/bundle-stage.js)
+      Pure 2D PNG-compositing depth-stack visualiser (NO three.js). Listens for
+      `bundle:updated` and stacks the box-back layer, the packs (newest at the
+      front), and the box-front lip. Box-layer <img>s are server-rendered; pack
+      images ride along in the event detail.
 
-  Requires the import map in layout/theme.liquid (resolves the `three` specifier).
+  ----------------------------------------------------------------------------
+  DATA MODEL
+
+  The box itself is ONE product (the "Build Your Box" product, priced at the
+  flat box price) chosen in the section settings. On "Add to cart" the section
+  POSTs that product's variant to /cart/add.js with the chosen flavours as a
+  line-item property — the native cart treats it as any other line item.
+
+  Flavours are CURATED PER BOX PRODUCT: the box product's
+  `custom.included_flavours` metafield (a list of `flavour` metaobjects) sets
+  which flavours show and in what order. Each referenced flavour metaobject
+  needs these field handles:
+
+    name    single_line_text_field  — flavour name ("Mexi Fiesta Blend")
+    notes   single_line_text_field  — descriptors ("Smoky • Rich • Peppery") (optional)
+    image   file_reference (image)   — the pouch render PNG for the visualiser
+
+  No box product (or an empty metafield) → no flavours render and add stays off.
+
+  Box-layer renders (box-back / box-front) are merchant-overridable image
+  settings; if unset they fall back to the committed placeholder theme assets
+  (assets/box-back.png / box-front.png) pending the real Blender renders.
+
+  Box capacity is locked at 4 (not a merchant setting) — the visualiser stack
+  offsets are tuned for a 4-pack box.
 {%- endcomment -%}
 
-{%- assign slots_per_box = 4 -%}
-{%- assign target_qty = section.settings.target_boxes | times: slots_per_box -%}
-{%- assign max_qty = section.settings.max_boxes | times: slots_per_box -%}
+{%- assign capacity = 4 -%}
+{%- assign box_product = section.settings.box_product -%}
+{%- comment -%}
+  Prefer the available variant (for price + a clean add); fall back to the first
+  variant so the add button stays live even when nothing is "available" — the
+  /cart/add.js call then surfaces a real "out of stock" error instead of the
+  button silently sitting disabled.
+{%- endcomment -%}
+{%- assign box_variant = box_product.selected_or_first_available_variant | default: box_product.variants.first -%}
+{%- comment -%} Curated, ordered list of flavour metaobjects, set per box product. {%- endcomment -%}
+{%- assign included_flavours = box_product.metafields.custom.included_flavours.value -%}
+
+{%- comment -%} Placeholder box renders are square (2048²); merchant overrides keep their own dims. {%- endcomment -%}
+{%- if section.settings.box_back_image != blank -%}
+  {%- assign box_back_url = section.settings.box_back_image | image_url: width: 1500 -%}
+  {%- assign box_back_w = section.settings.box_back_image.width -%}
+  {%- assign box_back_h = section.settings.box_back_image.height -%}
+{%- else -%}
+  {%- assign box_back_url = 'box-back.png' | asset_url -%}
+  {%- assign box_back_w = 2048 -%}
+  {%- assign box_back_h = 2048 -%}
+{%- endif -%}
+{%- if section.settings.box_front_image != blank -%}
+  {%- assign box_front_url = section.settings.box_front_image | image_url: width: 1500 -%}
+  {%- assign box_front_w = section.settings.box_front_image.width -%}
+  {%- assign box_front_h = section.settings.box_front_image.height -%}
+{%- else -%}
+  {%- assign box_front_url = 'box-front.png' | asset_url -%}
+  {%- assign box_front_w = 2048 -%}
+  {%- assign box_front_h = 2048 -%}
+{%- endif -%}
 
 <bundle-builder
   class="bundle-builder color-{{ section.settings.color_scheme }}"
   data-section-id="{{ section.id }}"
-  data-currency="{{ shop.currency }}"
-  data-slots-per-box="{{ slots_per_box }}"
-  data-target-qty="{{ target_qty }}"
-  data-max-qty="{{ max_qty }}"
-  data-tiers='[{%- for block in section.blocks -%}{%- if block.type == "tier" -%}{"min":{{ block.settings.min_boxes | times: slots_per_box }},"pct":{{ block.settings.pct | divided_by: 100.0 }}}{%- unless forloop.last -%},{%- endunless -%}{%- endif -%}{%- endfor -%}]'
-  data-i18n-progress-headline="{{ 'sections.bundle_builder.progress_headline' | t }}"
-  data-i18n-progress-headline-max="{{ 'sections.bundle_builder.progress_headline_max' | t }}"
-  data-i18n-progress-detail="{{ 'sections.bundle_builder.progress_detail' | t }}"
-  data-i18n-progress-detail-max="{{ 'sections.bundle_builder.progress_detail_max' | t }}"
-  data-i18n-pouch="{{ 'sections.bundle_builder.pouch' | t }}"
-  data-i18n-pouches="{{ 'sections.bundle_builder.pouches' | t }}"
-  data-i18n-box="{{ 'sections.bundle_builder.box' | t }}"
-  data-i18n-boxes="{{ 'sections.bundle_builder.boxes' | t }}"
-  data-i18n-slots-per-box="{{ 'sections.bundle_builder.slots_per_box' | t }}"
-  data-i18n-remove="{{ 'sections.bundle_builder.remove_item' | t }}"
+  data-capacity="{{ capacity }}"
+  {% if box_variant %}data-box-variant-id="{{ box_variant.id }}"{% endif %}
+  data-i18n-add="{{ 'sections.bundle_builder.add_to_cart' | t }}"
+  data-i18n-add-more="{{ 'sections.bundle_builder.add_more' | t }}"
+  data-i18n-added="{{ 'sections.bundle_builder.added' | t }}"
+  data-i18n-contents="{{ 'sections.bundle_builder.contents_property' | t }}"
   data-i18n-error="{{ 'sections.bundle_builder.checkout_error' | t }}"
 >
-  <script type="application/json" class="bundle-products">
+  <script type="application/json" class="bundle-flavours">
     [
-      {%- for product in section.settings.collection.products -%}
-        {%- assign variant = product.selected_or_first_available_variant -%}
-        {%- assign pouch_texture = product.metafields.custom.pouch_texture -%}
+      {%- for flavour in included_flavours -%}
         {
-          "id": {{ variant.id | json }},
-          "handle": {{ product.handle | json }},
-          "title": {{ product.title | json }},
-          "size": {{ product.metafields.custom.pack_size | default: variant.title | json }},
-          "price": {{ variant.price | json }},
-          "textureUrl": {% if pouch_texture != blank %}{{ pouch_texture.value | image_url: width: 2048 | json }}{% else %}""{% endif %}
+          "id": {{ flavour.system.handle | json }},
+          "name": {{ flavour.name.value | json }},
+          "notes": {{ flavour.notes.value | default: '' | json }},
+          "image": {% if flavour.image.value != blank %}{{ flavour.image.value | image_url: width: 1500 | json }}{% else %}""{% endif %}
         }{%- unless forloop.last -%},{%- endunless -%}
       {%- endfor -%}
     ]
   </script>
 
-  {%- comment -%} 3D stage — background layer on desktop, top block on mobile {%- endcomment -%}
-  <div class="bundle-stage-bg">
-    <bundle-stage
-      class="bundle-stage"
-      data-model="{{ 'box.glb' | asset_url }}"
-      data-pouch-model="{{ 'pouch.glb' | asset_url }}"
-      data-box-texture="{{ 'box.webp' | asset_url }}"
-      data-slots-per-box="{{ slots_per_box }}"
-    >
-      <p class="bundle-stage-empty" data-bundle-empty>
-        {{ 'sections.bundle_builder.empty_stage' | t }}
-      </p>
-    </bundle-stage>
-  </div>
-
   <div class="bundle-layout">
-    <aside class="bundle-left">
-      <div class="bundle-product-list" data-product-list>
-        {%- for product in section.settings.collection.products -%}
-          {%- assign variant = product.selected_or_first_available_variant -%}
-          {%- assign pouch_size = product.metafields.custom.pack_size | default: variant.title -%}
-          <article class="bundle-card" data-product-card data-variant-id="{{ variant.id }}">
-            <header class="bundle-card-header">
-              <div class="bundle-card-title">
-                <h3 class="text-ui">{{ product.title }}</h3>
-                {%- if pouch_size != blank -%}
-                  <p class="bundle-card-size">{{ pouch_size }}</p>
-                {%- endif -%}
-              </div>
-            </header>
+    <section class="bundle-panel">
+      <header class="section-lockup">
+        {%- if section.settings.eyebrow != blank -%}
+          <h1 class="text-h1">{{ section.settings.eyebrow }}</h1>
+        {%- endif -%}
+        {%- if section.settings.heading != blank -%}
+          <h2 class="text-h3">{{ section.settings.heading }}</h2>
+        {%- endif -%}
+      </header>
+
+      <div class="bundle-flavour-list" data-flavour-list>
+        {%- for flavour in included_flavours -%}
+          <article
+            class="bundle-flavour"
+            data-flavour-card
+            data-flavour-id="{{ flavour.system.handle }}"
+          >
+            <div class="bundle-flavour-title">
+              <h3 class="text-ui">{{ flavour.name }}</h3>
+              {%- if flavour.notes != blank -%}
+                <p class="bundle-flavour-notes">{{ flavour.notes }}</p>
+              {%- endif -%}
+            </div>
             <div class="bundle-stepper">
               <button
                 type="button"
                 data-action="remove"
-                data-variant-id="{{ variant.id }}"
-                aria-label="{{ 'sections.bundle_builder.decrease' | t: name: product.title }}"
+                data-flavour-id="{{ flavour.system.handle }}"
+                aria-label="{{ 'sections.bundle_builder.decrease' | t: name: flavour.name }}"
                 disabled
               >
                 &minus;
               </button>
-              <span class="bundle-qty" data-qty>0</span>
+              <span class="bundle-qty" data-qty="{{ flavour.system.handle }}">0</span>
               <button
                 type="button"
                 data-action="add"
-                data-variant-id="{{ variant.id }}"
-                aria-label="{{ 'sections.bundle_builder.increase' | t: name: product.title }}"
+                data-flavour-id="{{ flavour.system.handle }}"
+                aria-label="{{ 'sections.bundle_builder.increase' | t: name: flavour.name }}"
               >
                 +
               </button>
             </div>
           </article>
         {%- else -%}
-          <p class="bundle-card-size">{{ 'collections.general.no_products' | t }}</p>
+          <p class="bundle-flavour-notes">{{ 'sections.bundle_builder.no_flavours' | t }}</p>
         {%- endfor -%}
       </div>
-    </aside>
 
-    <div class="bundle-center" aria-hidden="true"></div>
+      <footer class="bundle-footer">
+        {%- if box_variant -%}
+          <div class="bundle-price-row text-ui">
+            <span>{{ 'sections.bundle_builder.price' | t }}</span>
+            <span>{{ box_variant.price | money }}</span>
+          </div>
+        {%- endif -%}
 
-    <aside class="bundle-right">
-      <section class="bundle-progress" data-progress>
-        <div class="bundle-progress-row">
-          <p class="bundle-progress-headline text-ui" data-progress-headline></p>
-          <p class="bundle-progress-count" data-progress-count></p>
+        <button type="button" class="button bundle-add" data-add disabled>
+          <span data-add-label>{{ 'sections.bundle_builder.add_more' | t }}</span>
+        </button>
+
+        <p class="bundle-caption">{{ 'sections.bundle_builder.caption' | t: count: capacity }}</p>
+
+        <div class="form-error" data-error role="alert" hidden></div>
+      </footer>
+    </section>
+
+    <div class="bundle-visualiser">
+      <bundle-stage class="bundle-stage" data-capacity="{{ capacity }}">
+        <div class="bundle-scene" data-scene>
+          <img class="bundle-layer bundle-box-back" src="{{ box_back_url }}" alt="" loading="lazy" width="{{ box_back_w }}" height="{{ box_back_h }}" data-box-back-img>
+          <img class="bundle-layer bundle-box-front" src="{{ box_front_url }}" alt="" loading="lazy" width="{{ box_front_w }}" height="{{ box_front_h }}" data-box-front-img>
         </div>
-        <p class="bundle-progress-detail" data-progress-detail></p>
-        <div
-          class="bundle-progress-bar"
-          role="progressbar"
-          data-progress-bar
-          aria-valuemin="0"
-        >
-          <div class="bundle-progress-fill" data-progress-fill></div>
-        </div>
-        <p class="bundle-progress-boxes" data-progress-boxes></p>
-      </section>
-
-      {% render 'bundle-cart' %}
-    </aside>
+        <p class="bundle-stage-hint" data-stage-hint>{{ 'sections.bundle_builder.empty_stage' | t }}</p>
+      </bundle-stage>
+    </div>
   </div>
 </bundle-builder>
 
 {% stylesheet %}
   .bundle-builder {
     display: block;
-    position: relative;
-    padding: var(--spacing-xxs);
+    padding: var(--spacing-xs);
     background-color: var(--color-bg-dark);
     color: var(--color-text);
   }
 
-  /* 3D stage — mobile: in-flow block above the controls */
-  .bundle-stage-bg {
-    position: relative;
-    width: 100%;
-    height: 50vh;
-    margin-bottom: var(--spacing-xxs);
-    pointer-events: none;
-  }
-
-  .bundle-stage {
-    display: block;
-    position: relative;
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-  }
-
-  .bundle-stage canvas {
-    display: block;
-    width: 100% !important;
-    height: 100% !important;
-  }
-
-  .bundle-stage-empty {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    margin: 0;
-    font-size: var(--type-mini-size);
-    color: var(--color-text-accent);
-  }
-
   .bundle-layout {
-    position: relative;
-    z-index: 1;
+    display: flex;
+    flex-direction: column-reverse;
+    gap: var(--spacing-m);
+    align-items: center;
+    max-width: 1400px;
+    margin-inline: auto;
+  }
+
+  /* Builder panel */
+  .bundle-panel {
     display: flex;
     flex-direction: column;
-    gap: var(--spacing-xxs);
+    gap: var(--spacing-m);
+    width: 100%;
+    max-width: 460px;
   }
 
-  .bundle-left,
-  .bundle-right {
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-xxs);
-  }
-
-  .bundle-center {
-    display: none;
-  }
-
-  .bundle-product-list {
+  .bundle-flavour-list {
     display: flex;
     flex-direction: column;
     gap: var(--spacing-xxxs);
   }
 
-  /* Desktop: stage becomes an absolute background, controls float over it */
-  @media (min-width: 900px) {
-    .bundle-builder {
-      display: flex;
-      flex-direction: column;
-      min-height: 100vh;
-    }
-
-    .bundle-stage-bg {
-      position: absolute;
-      inset: 0;
-      height: auto;
-      margin-bottom: 0;
-      z-index: 0;
-    }
-
-    .bundle-layout {
-      flex: 1;
-      display: grid;
-      grid-template-columns: 300px 1fr 300px;
-      gap: var(--spacing-xxs);
-      min-height: 0;
-    }
-
-    .bundle-center {
-      display: block;
-      pointer-events: none;
-    }
-
-    .bundle-right {
-      justify-content: flex-end;
-    }
-
-    .bundle-product-list {
-      overflow-y: auto;
-    }
-
-    .bundle-left {
-      justify-content: end;
-    }
-  }
-
-  /* Product card */
-  .bundle-card {
+  /* Flavour card + stepper */
+  .bundle-flavour {
     display: flex;
-    flex-direction: column;
     justify-content: space-between;
-    gap: var(--spacing-xxs);
-    padding: var(--spacing-xxs);
+    align-items: center;
+    gap: var(--spacing-xs);
+    padding: var(--spacing-xs);
     border-radius: var(--rad-s);
     background: var(--color-bg);
     color: var(--color-text);
   }
 
-  .bundle-card-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: var(--spacing-xxs);
-  }
-
-  .bundle-card-title {
+  .bundle-flavour-title {
     display: flex;
     flex-direction: column;
     gap: var(--spacing-xxxs);
   }
 
-  .bundle-card-title h3 {
+  .bundle-flavour-title h3 {
     margin: 0;
   }
 
-  .bundle-card-size {
+  .bundle-flavour-notes {
     margin: 0;
     font-size: var(--type-mini-size);
     letter-spacing: 0.04em;
@@ -291,16 +245,14 @@
     color: var(--color-text-accent);
   }
 
-  /* Stepper */
   .bundle-stepper {
     display: inline-flex;
     align-items: center;
     gap: var(--spacing-xxxs);
-    align-self: flex-start;
   }
 
   .bundle-stepper button {
-    padding: var(--spacing-xxxs) var(--spacing-xxs);
+    padding: var(--spacing-xxxs) var(--spacing-xs);
     background-color: var(--color-text);
     color: var(--color-bg);
     border-radius: var(--rad-s);
@@ -321,65 +273,174 @@
     font-size: var(--type-mini-size);
   }
 
-  /* Progress */
-  .bundle-progress {
+  /* Footer: price + add */
+  .bundle-footer {
     display: flex;
     flex-direction: column;
-    gap: var(--spacing-xxs);
-    padding: var(--spacing-xxs);
-    border-radius: var(--rad-s);
-    background: var(--color-accent);
+    gap: var(--spacing-xs);
   }
 
-  .bundle-progress-row {
+  .bundle-price-row {
     display: flex;
     justify-content: space-between;
     align-items: baseline;
-  }
-
-  .bundle-progress-headline {
     margin: 0;
-    color: var(--color-text);
   }
 
-  .bundle-progress-count {
-    margin: 0;
-    font-size: var(--type-mini-size);
-    color: var(--color-text);
+  .bundle-add {
+    width: 100%;
   }
 
-  .bundle-progress-detail {
+  .bundle-caption {
     margin: 0;
     font-size: var(--type-mini-size);
     color: var(--color-text-accent);
   }
 
-  .bundle-progress-bar {
-    height: 5px;
-    border-radius: 1px;
-    overflow: hidden;
-    background: var(--color-text-accent);
+  /* Visualiser */
+  .bundle-visualiser {
+    width: 100%;
+    max-width: 460px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
-  .bundle-progress-fill {
-    width: 0;
+  .bundle-stage {
+    display: block;
+    position: relative;
+    width: 100%;
+    /* Keep the layer z-indexes (box-back/packs/box-front) local — without a
+       stacking context the box-front's z-index would leak to the root and paint
+       over the cart drawer (z-index 99). */
+    isolation: isolate;
+  }
+
+  /* Square frame matching the authoring render. overflow visible so packs
+     shifted up-left in the stack aren't clipped. */
+  .bundle-scene {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    overflow: visible;
+  }
+
+  .bundle-layer,
+  .bundle-slot,
+  .bundle-pack {
+    position: absolute;
+    inset: 0;
+    width: 100%;
     height: 100%;
-    background: var(--color-text);
-    transition: width var(--transition-fast);
+    pointer-events: none;
   }
 
-  .bundle-progress-boxes {
+  .bundle-layer,
+  .bundle-pack {
+    object-fit: contain;
+  }
+
+  .bundle-box-back {
+    z-index: 0;
+  }
+
+  .bundle-box-front {
+    z-index: 200;
+  }
+
+  /* A slot carries the depth transform; the inner pack carries enter/exit. */
+  .bundle-slot {
+    transform-origin: 50% 82%;
+    transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .bundle-pack {
+    filter: drop-shadow(0 4px 8px var(--color-shadow-soft));
+    transition: transform 0.34s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.34s ease;
+  }
+
+  .bundle-slot.is-entering .bundle-pack {
+    transform: translateY(-12%);
+    opacity: 0;
+  }
+
+  .bundle-slot.is-leaving .bundle-pack {
+    transform: translateY(-8%);
+    opacity: 0;
+    transition-duration: 0.18s;
+  }
+
+  .bundle-stage-hint {
+    position: absolute;
+    bottom: 0;
+    left: 0;
     margin: 0;
     font-size: var(--type-mini-size);
-    letter-spacing: 0.03em;
+    letter-spacing: 0.06em;
     text-transform: uppercase;
     color: var(--color-text-accent);
   }
 
-  /* "Your Box" cart panel — markup + styles live in snippets/bundle-cart.liquid */
+  /* Desktop: builder left, visualiser right */
+  @media (min-width: 900px) {
+    .bundle-builder {
+      padding: var(--spacing-m);
+    }
+
+    .bundle-layout {
+      flex-direction: row;
+      align-items: stretch;
+      justify-content: center;
+      gap: var(--spacing-xl);
+    }
+
+    .bundle-panel {
+      flex: none;
+      width: 440px;
+      max-width: 440px;
+      justify-content: space-between;
+    }
+
+    .bundle-visualiser {
+      flex: 1;
+      max-width: 600px;
+    }
+  }
+
+  /* Dev-only calibration overlay (toggle with ?bundle-calibrate in the URL) */
+  .bundle-calib {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 400;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xxxs);
+    width: 220px;
+    padding: var(--spacing-xxs);
+    border-radius: var(--rad-s);
+    background: var(--color-bg);
+    color: var(--color-text);
+    font-size: var(--type-mini-size);
+  }
+
+  .bundle-calib label {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .bundle-calib input[type='range'] {
+    width: 100%;
+  }
+
+  .bundle-calib code {
+    word-break: break-all;
+    font-size: 0.6rem;
+  }
 
   @media (prefers-reduced-motion: reduce) {
-    .bundle-progress-fill {
+    .bundle-slot,
+    .bundle-pack {
       transition: none;
     }
   }
@@ -395,41 +456,50 @@
   "class": "bundle-builder-section",
   "settings": [
     {
-      "type": "collection",
-      "id": "collection",
-      "label": "Products collection",
-      "info": "Use single-pouch products — each variant is one priced pouch. Each product needs a 'pouch_texture' metafield (custom namespace, File reference to an image) for its 3D pouch; products without one fall back to a flat colour."
-    },
-    {
-      "type": "header",
-      "content": "Discount tiers"
+      "type": "product",
+      "id": "box_product",
+      "label": "Box product",
+      "info": "The single 'Build Your Box' product, priced at the flat box price. The chosen flavours are added to this product as a line-item property."
     },
     {
       "type": "paragraph",
-      "content": "Add a tier block per discount level. Each tier's minimum is set in BOXES (1 box = 4 pouches). Display-only projection — create a matching Shopify automatic discount in admin and keep these in sync with it."
+      "content": "Flavours come from this product's 'Included flavours' metafield (custom.included_flavours) — a list of flavour metaobjects. Reorder there to reorder the cards. Each flavour needs a name, optional notes, and an image. The box always holds 4 packs."
     },
     {
       "type": "header",
-      "content": "Quantities"
+      "content": "Header"
     },
     {
-      "type": "range",
-      "id": "target_boxes",
-      "label": "Starting target (boxes)",
-      "info": "Progress-bar target before the first discount tier is reached.",
-      "min": 1,
-      "max": 4,
-      "step": 1,
-      "default": 1
+      "type": "text",
+      "id": "eyebrow",
+      "label": "Eyebrow",
+      "default": "Build your box"
     },
     {
-      "type": "range",
-      "id": "max_boxes",
-      "label": "Maximum boxes",
-      "min": 1,
-      "max": 4,
-      "step": 1,
-      "default": 4
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "Create and customise your box from the Frood selection."
+    },
+    {
+      "type": "header",
+      "content": "Box renders"
+    },
+    {
+      "type": "paragraph",
+      "content": "Optional overrides for the visualiser box layers. If unset, the placeholder renders shipped with the theme are used."
+    },
+    {
+      "type": "image_picker",
+      "id": "box_back_image",
+      "label": "Box back layer",
+      "info": "Carton with the front panel hidden — sits behind the packs."
+    },
+    {
+      "type": "image_picker",
+      "id": "box_front_image",
+      "label": "Box front layer",
+      "info": "Front panel / lip only — sits in front of the pack bases."
     },
     {
       "type": "header",
@@ -442,42 +512,9 @@
       "default": "scheme-1"
     }
   ],
-  "blocks": [
-    {
-      "type": "tier",
-      "name": "Discount tier",
-      "settings": [
-        {
-          "type": "range",
-          "id": "min_boxes",
-          "label": "Minimum boxes",
-          "min": 1,
-          "max": 4,
-          "step": 1,
-          "default": 2
-        },
-        {
-          "type": "range",
-          "id": "pct",
-          "label": "Discount %",
-          "min": 0,
-          "max": 50,
-          "step": 1,
-          "unit": "%",
-          "default": 10
-        }
-      ]
-    }
-  ],
-  "max_blocks": 4,
   "presets": [
     {
-      "name": "Bundle builder",
-      "blocks": [
-        { "type": "tier", "settings": { "min_boxes": 2, "pct": 10 } },
-        { "type": "tier", "settings": { "min_boxes": 3, "pct": 15 } },
-        { "type": "tier", "settings": { "min_boxes": 4, "pct": 20 } }
-      ]
+      "name": "Bundle builder"
     }
   ]
 }

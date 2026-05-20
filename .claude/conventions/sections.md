@@ -82,51 +82,61 @@ If field handles differ in the admin (Shopify lowercases + snake_cases field nam
 
 ## Bundle Builder Section
 
-`sections/bundle-builder.liquid` — an interactive "build your box" section ported from a Svelte demo
-(v2, pouch-first). The atomic unit is a single POUCH, not a 4-pack box. A WebGL stage renders a grid
-of boxes, each holding up to 4 pouches in named slot anchors (`Slot0`–`Slot3` in `box.glb`); product
-cards add/remove pouches; a progress bar tracks box-based discount tiers; a cart summary shows
-projected totals.
+`sections/bundle-builder.liquid` — an interactive "build your box" section (v3, box-first), ported
+from the Svelte prototype's `/v3`. The shopper fills ONE fixed box of **4 packs** (capacity locked,
+not a merchant setting) by mixing flavours, then adds the whole box to the **native Shopify cart** as
+a SINGLE line item at a flat price. There are **no discount tiers** and **no multi-box draft** — that
+was the old pouch-first v2, now fully removed (`bundle-store.js`, `bundle-cart-view.js`,
+`snippets/bundle-cart.liquid`, `box.glb`, `pouch.glb`, `box.webp` all deleted).
 
-**State is an ordered list:** `<bundle-builder>` holds `pouches: [variantId, …]` — one entry per
-pouch, order-sensitive. Pouch index i fills box `floor(i / 4)`, slot `i % 4`; removing a pouch
-shifts later pouches up a slot. Per-flavour counts are derived for the cart lines + steppers.
+**State is an ordered list:** `<bundle-builder>` holds `box: [{ key, id }, …]` — one entry per pack,
+capped at capacity, order-sensitive (`box[0]` oldest, `box[last]` newest). `id` is the flavour's
+metaobject handle; `key` is a stable session-local id so the visualiser keeps each pack's identity
+across add/remove. The newest pack renders at the FRONT of the visual stack. Per-flavour counts are
+derived for the steppers and the line-item property.
 
 **Files:**
 
-- `sections/bundle-builder.liquid` — markup, co-located stylesheet, schema (collection + box-based
-  quantity settings + `tier` blocks)
-- `assets/bundle-builder.js` — `<bundle-builder>` web component: owns the ordered pouch list,
-  localStorage persistence (`frood.bundle.v2.<sectionId>`), derived totals/tier/discount/boxCount,
-  DOM hydration, add-to-cart. Header comment documents the full expected-markup contract.
-- `assets/bundle-stage.js` — `<bundle-stage>` web component: the three.js scene
-- `assets/three.module.js` + `three.core.js` + `gltf-loader.js` (+ `buffer-geometry-utils.js`,
-  `skeleton-utils.js`) — vendored three.js r184
-- `assets/box.glb` (box mesh + 4 slot anchors) + `assets/pouch.glb` (one pouch mesh) + `box.webp` —
-  vendored models + shared box texture
+- `sections/bundle-builder.liquid` — markup, co-located stylesheet, schema (box `product` picker,
+  header text, optional `box_back_image`/`box_front_image` overrides, color scheme). No blocks.
+- `assets/bundle-builder.js` — `<bundle-builder>` web component: owns the ordered pack list,
+  localStorage persistence (`frood.bundle.v3.<sectionId>` — flavour ids only), steppers, and native
+  add-to-cart. Header comment documents the full expected-markup + event contract.
+- `assets/bundle-stage.js` — `<bundle-stage>` web component: pure 2D PNG-compositing depth-stack
+  visualiser. **No three.js.** Reconciles a keyed `.bundle-slot` per pack with enter/exit transitions.
+- `assets/box-back.png` + `assets/box-front.png` — committed placeholder box-layer renders (heavy —
+  replace with optimised Blender exports). Overridable per-section via the image-picker settings.
 
-**Two-component split:** `<bundle-builder>` (state) and `<bundle-stage>` (3D) are standalone per
-theme convention — they communicate only via the `bundle:updated` event on `document`, detail
-`{ pouches: [variantId, …] }` (the ordered pouch list). `<bundle-stage>` derives its own box/slot
-grid from the order. Both also independently read the `.bundle-products` JSON blob in the section
-markup.
+three.js is **not** used here any more, but `layout/theme.liquid` still vendors it (the one import
+map) for `product-card-stage.js` — don't remove it.
 
-**Import map (new theme pattern):** three.js is ESM-only, so `layout/theme.liquid` has a `<script
-type="importmap">` in `<head>` mapping the bare `three` specifier to the vendored `three.module.js`.
-This is the **only** import map in the theme — it must stay high in `<head>` (before any module
-script loads) and there can only be one. Unlike Embla (vendored as a UMD global), three.js is
-consumed as real ES modules. `gltf-loader.js` had its two `three/addons/...` util imports patched to
-relative `./` paths.
+**Two-component split:** `<bundle-builder>` (state) and `<bundle-stage>` (visual) are standalone per
+theme convention — they communicate only via `bundle:updated` on `document`, detail
+`{ box: [{ key, id, image }, …], counts, filled, capacity, isFull }`. The builder resolves each pack's
+image (from the flavour metaobject, via the `.bundle-flavours` JSON blob) into the event, so the stage
+needs no catalogue of its own. On connect the stage dispatches `bundle:request-state` and the builder
+re-emits — the handshake covering module-upgrade order.
 
-**Pouch textures come from a metafield:** each product needs a `custom.pouch_texture` metafield (File
-reference to an image) for its 3D pouch. Products without one fall back to a flat colour — no error.
+**Visualiser (PNG depth stack):** back→front the stage layers `box-back` (z 0), the packs (each
+`z = 100 − depth`), and `box-front` (z 200, occludes the pack bases). A pack at `depth` is the same
+full-frame render translated up-left by `depth × STACK.offset` (`STACK = { offsetX: -9.5, offsetY: -4,
+scaleStep: 0, rotateStep: 0 }`) — the renders are authored in-scale so it's translate-only by default.
+Append `?bundle-calibrate` to the URL for a dev slider overlay to retune `STACK` against real renders.
 
-**Discount tiers are box-based blocks:** each `tier` block sets a minimum in BOXES (1–4) and a %.
-The section converts box minimums to pouch thresholds (`× 4`) before handing them to the JS. Display
--only — the tier % shown is a projection; the real discount must be a Shopify automatic discount
-configured in admin, kept in sync with the tier blocks. The bundle is **not** a separate cart — it is
-a local draft (localStorage). "Add to cart" collapses the ordered pouch list to per-variant quantities
-and POSTs them to `/cart/add.js` in one request (shared `_bundle` line-item property so the automatic
-discount can target the group), clears the local draft, and dispatches `cart:item-added` on `document`
-— the native `<cart-drawer>` picks that up to refresh and open. From there the pouches live in the
-regular Shopify cart like any other line item.
+**Flavours are curated per box product** via its `custom.included_flavours` metafield — a list of
+`flavour` metaobjects. The section reads `box_product.metafields.custom.included_flavours.value` (a
+single `assign` reused by both the JSON blob and the cards), so the merchant controls **which**
+flavours show and **in what order** by editing that list on the product (no theme change). Each
+referenced `flavour` metaobject needs `name` (single line text), optional `notes` (single line text),
+and `image` (file reference, image) — the pouch render for the stack. Missing images hide
+gracefully (`onerror`). The box capacity (4) is independent of how many flavours are included; no box
+product (or an empty metafield) → no flavours render and the add button stays disabled.
+
+**The box is a single product + flavour property:** the section's `product` setting is the flat-priced
+"Build Your Box" product. When the box is full, the builder POSTs that product's variant to
+`/cart/add.js` (`{ items: [{ id, quantity: 1, properties: { Flavours: "2 × Mexi, 2 × Curry" } }],
+sections: ['cart-drawer'] }`), clears the local draft, dispatches `cart:item-added` with the bundled
+section HTML, and fires a success `toast:show` — the same contract as `product-form.js` (the native
+`<cart-drawer>` refreshes but does **not** auto-open; it opens on cart-icon click). The bundle is never
+the cart — flavours have no SKU/inventory of their own; the box line carries them as a property only.
+If no box product is configured, the builder still assembles but the add button stays disabled.

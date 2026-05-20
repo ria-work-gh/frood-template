@@ -7,8 +7,9 @@
 
   {%- comment -%}
     Import map for vendored three.js (ESM-only). Must precede the first module
-    script load — keep it high in <head>. Consumed by assets/bundle-stage.js
-    and assets/gltf-loader.js. See sections/bundle-builder.liquid.
+    script load — keep it high in <head>. Consumed by assets/gltf-loader.js and
+    assets/product-card-stage.js (3D product-card renders). This is the theme's
+    only import map — there can be just one.
   {%- endcomment -%}
   <script type="importmap">
     { "imports": { "three": "{{ 'three.module.js' | asset_url }}" } }
