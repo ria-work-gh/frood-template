@@ -10,6 +10,8 @@
   (Tighter grid than products since recipe cards carry more written content.)
 {%- endcomment -%}
 
+<script type="module" src="{{ 'recipe-modal.js' | asset_url }}"></script>
+
 <section class="recipes-index color-{{ section.settings.color_scheme }}">
   <header class="recipes-index-header section-lockup">
     {%- if section.settings.eyebrow != blank -%}
@@ -61,7 +63,7 @@
   .recipes-index-grid {
     display: grid;
     grid-template-columns: 1fr;
-    gap: var(--spacing-xs);
+    gap: var(--spacing-s);
   }
 
   /* Tablet+: 2 columns */
@@ -71,9 +73,16 @@
     }
   }
 
-  /* Desktop+: 3 columns (intentionally tighter than the 4-up product grid —
-     recipe cards carry more body copy and want a bit more horizontal space) */
+  /* Desktop: 2 columns (cards are horizontal — image + text side by side — so
+     fewer columns lets each card breathe) */
   @media (min-width: 900px) {
+    .recipes-index-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  /* Large: 3 columns */
+  @media (min-width: 1500px) {
     .recipes-index-grid {
       grid-template-columns: repeat(3, 1fr);
     }

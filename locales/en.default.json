@@ -275,6 +275,9 @@
   "recipes": {
     "index": {
       "empty": "No recipes yet."
+    },
+    "modal": {
+      "close": "Close"
     }
   }
 }

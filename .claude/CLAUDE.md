@@ -123,7 +123,7 @@ Co-located in section files using `{% stylesheet %}` (not `<style>`):
 - Vanilla CSS with custom properties, mobile-first
 - Simple semantic class names — no BEM, no utility classes
 - Modifier classes: `.product-card.sold-out` (not `product-card--sold-out`)
-- Breakpoints: 600px (tablet), 900px (desktop), 1200px (large), 1500px (XL)
+- Breakpoints: 600px (tablet), 900px (desktop), 1500px (large)
 - Z-index: header `9`, footer `10`, mobile menu `99`, lightbox `999`
 
 ### Web Components (JavaScript)

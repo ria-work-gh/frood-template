@@ -2,8 +2,10 @@
   <product-card-quick-add>
 
   Lightweight quick-add for product cards. Intercepts the wrapped <form>'s
-  submission, POSTs to /cart/add.js for the default variant, and dispatches
-  'cart:item-added' so the cart drawer opens and the cart icon updates.
+  submission, POSTs the first variant to /cart/add.js (with sections=cart-drawer
+  for the bundled drawer HTML), then fetches /cart.js for the updated cart
+  totals. Dispatches 'cart:item-added' with { cart, sections } so cart-drawer
+  and cart-icon can update synchronously.
 
   Why a separate component (not <product-form>): the PDP form handles variant
   selectors, quantity input, server-rendered region swaps, and product JSON
@@ -48,24 +50,30 @@ class ProductCardQuickAdd extends HTMLElement {
       const variantId = this.form.querySelector('input[name="id"]')?.value;
       if (!variantId) throw new Error('Missing variant id');
 
-      const response = await fetch('/cart/add.js', {
+      const addResponse = await fetch('/cart/add.js', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'X-Requested-With': 'XMLHttpRequest'
         },
-        body: JSON.stringify({ items: [{ id: parseInt(variantId, 10), quantity: 1 }] })
+        body: JSON.stringify({
+          items: [{ id: parseInt(variantId, 10), quantity: 1 }],
+          sections: ['cart-drawer']
+        })
       });
 
-      if (!response.ok) {
-        const err = await response.json().catch(() => ({}));
+      if (!addResponse.ok) {
+        const err = await addResponse.json().catch(() => ({}));
         throw new Error(err.description || 'Failed to add to cart');
       }
 
-      const data = await response.json();
+      const addData = await addResponse.json();
 
+      // Dispatch immediately — drawer opens and refreshes from the bundled
+      // section HTML. cart-icon self-fetches /cart.js for the new count if
+      // detail.cart is missing, so we don't block the drawer-open path on it.
       document.dispatchEvent(new CustomEvent('cart:item-added', {
-        detail: { items: data.items || data }
+        detail: { sections: addData.sections }
       }));
 
       // If cart type is 'page' (not drawer), redirect — matches product-form.js
@@ -85,3 +93,5 @@ class ProductCardQuickAdd extends HTMLElement {
 }
 
 customElements.define('product-card-quick-add', ProductCardQuickAdd);
+</content>
+</invoke>

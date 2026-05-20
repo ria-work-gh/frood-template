@@ -163,7 +163,8 @@ class ProductForm extends HTMLElement {
           'X-Requested-With': 'XMLHttpRequest'
         },
         body: JSON.stringify({
-          items: [{ id: parseInt(variantId), quantity }]
+          items: [{ id: parseInt(variantId), quantity }],
+          sections: ['cart-drawer']
         })
       });
 
@@ -174,9 +175,11 @@ class ProductForm extends HTMLElement {
 
       const data = await response.json();
 
-      // Notify other components (cart-drawer, cart-icon)
+      // Dispatch immediately — drawer opens and refreshes from the bundled
+      // section HTML. cart-icon self-fetches /cart.js for the new count if
+      // detail.cart is missing, so we don't block the drawer-open path on it.
       document.dispatchEvent(new CustomEvent('cart:item-added', {
-        detail: { items: data.items || data }
+        detail: { sections: data.sections }
       }));
 
       // Check cart type preference: 'drawer' lets cart-drawer open itself,

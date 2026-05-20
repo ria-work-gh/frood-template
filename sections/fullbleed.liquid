@@ -1,14 +1,26 @@
 {%- comment -%}
-  Frood Full-bleed — large image at viewport height (100vh or 75vh).
+  Frood Full-bleed — large image or video at viewport height (100vh or 75vh).
   Optional outer margins (padding m around the section) and an optional caption card
-  sitting inside the image with xxs offset from the image edges.
+  sitting inside the media with xxs offset from the media edges.
+  If both image and video are set, video wins.
 {%- endcomment -%}
 
 <section
   class="fullbleed-section color-{{ section.settings.color_scheme }} height-{{ section.settings.height }}{% if section.settings.margins %} has-margins{% endif %}"
 >
   <div class="fullbleed-frame">
-    {%- if section.settings.image != blank -%}
+    {%- if section.settings.video != blank -%}
+      {{
+        section.settings.video
+        | video_tag:
+          controls: false,
+          autoplay: true,
+          loop: true,
+          muted: true,
+          playsinline: true,
+          class: 'fullbleed-media'
+      }}
+    {%- elsif section.settings.image != blank -%}
       {{
         section.settings.image
         | image_url: width: 2400
@@ -18,10 +30,10 @@
           sizes: '100vw',
           width: section.settings.image.width,
           height: section.settings.image.height,
-          class: 'fullbleed-image'
+          class: 'fullbleed-media'
       }}
     {%- else -%}
-      <div class="fullbleed-image placeholder" aria-hidden="true"></div>
+      <div class="fullbleed-media placeholder" aria-hidden="true"></div>
     {%- endif -%}
 
     {%- if section.settings.caption_heading != blank or section.settings.caption_body != blank -%}
@@ -76,7 +88,7 @@
     z-index: 1;
   }
 
-  .fullbleed-image {
+  .fullbleed-media {
     position: absolute;
     inset: 0;
     width: 100%;
@@ -85,7 +97,7 @@
     z-index: 0;
   }
 
-  .fullbleed-image.placeholder {
+  .fullbleed-media.placeholder {
     background: var(--color-bg-dark);
   }
 
@@ -121,6 +133,12 @@
       "type": "image_picker",
       "id": "image",
       "label": "Image"
+    },
+    {
+      "type": "video",
+      "id": "video",
+      "label": "Video (autoplays muted, loops)",
+      "info": "If both image and video are set, video wins."
     },
     {
       "type": "select",

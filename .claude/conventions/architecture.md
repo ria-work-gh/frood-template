@@ -42,8 +42,7 @@ Modifiers use plain compound selectors:
 | Mobile | 0 (default) | Base styles |
 | Tablet | `600px` | Two-column layouts |
 | Desktop | `900px` | Three-column grids, typography bumps |
-| Large | `1200px` | Wide content areas |
-| XL | `1500px` | Max-width constraints |
+| Large | `1500px` | Wide content areas, max-width constraints |
 
 Typography also responds at `1600px`.
 

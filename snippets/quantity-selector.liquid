@@ -10,7 +10,7 @@
 
 <quantity-selector {% if data_key %} data-key="{{ data_key }}"{% endif %}>
   <div class="quantity-selector">
-    <button type="button" data-action="decrease" aria-label="{{ 'products.product.decrease_quantity' | t }}">&#8722;</button>
+    <button type="button" data-action="decrease" aria-label="{{ 'products.product.decrease_quantity' | t }}">{% render 'icon-remove' %}</button>
     <input
       type="number"
       name="{{ qs_name }}"
@@ -20,6 +20,6 @@
       {% if data_key %}data-key="{{ data_key }}"{% endif %}
       aria-label="{{ 'products.product.quantity' | t }}"
     >
-    <button type="button" data-action="increase" aria-label="{{ 'products.product.increase_quantity' | t }}">+</button>
+    <button type="button" data-action="increase" aria-label="{{ 'products.product.increase_quantity' | t }}">{% render 'icon-add' %}</button>
   </div>
 </quantity-selector>
