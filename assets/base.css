@@ -8,6 +8,10 @@ body {
 
 * {
   box-sizing: border-box;
+  /* Trim the font's leading half-cap above and descender below from every text
+     box, so all-caps labels (h1, .text-h1, .button, .nav-link) sit optically
+     centred on their own padding/margins. No-ops on non-text boxes. */
+  text-box: trim-both cap alphabetic;
 }
 
 .unstyled-list {

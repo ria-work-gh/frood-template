@@ -22,7 +22,7 @@
       data-i18n-contents  data-i18n-error>
 
       <script type="application/json" class="bundle-flavours">
-        [{ id, name, notes, image }, …]            (id = metaobject handle)
+        [{ id, name, attributes, image }, …]       (id = metaobject handle)
       </script>
 
       [data-flavour-list]
@@ -63,6 +63,8 @@ class BundleBuilder extends HTMLElement {
 
     this.addButton = this.querySelector('[data-add]');
     this.addLabel = this.querySelector('[data-add-label]');
+    this.progressEl = this.querySelector('[data-progress]');
+    this.progressFillEl = this.querySelector('[data-progress-fill]');
     this.errorEl = this.querySelector('[data-error]');
 
     this._onClick = (e) => this.handleClick(e);
@@ -217,13 +219,14 @@ class BundleBuilder extends HTMLElement {
 
     if (this.addButton) this.addButton.disabled = !atCap || !this.boxVariantId;
     if (this.addLabel) {
-      if (atCap) {
-        this.addLabel.textContent = this.dataset.i18nAdd || 'Add to cart';
-      } else {
-        const remaining = this.capacity - this.filled;
-        const tmpl = this.dataset.i18nAddMore || 'Add {count} more';
-        this.addLabel.textContent = tmpl.replace('{count}', remaining);
-      }
+      this.addLabel.textContent = this.dataset.i18nAdd || 'Add to cart';
+    }
+    if (this.progressFillEl) {
+      const pct = Math.min(100, (this.filled / this.capacity) * 100);
+      this.progressFillEl.style.width = `${pct}%`;
+    }
+    if (this.progressEl) {
+      this.progressEl.setAttribute('aria-valuenow', String(this.filled));
     }
   }
 

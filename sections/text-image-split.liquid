@@ -82,6 +82,12 @@
   .text-image-split-text.text-align-middle { align-items: center; }
   .text-image-split-text.text-align-bottom { align-items: flex-end; }
 
+  /* Cap section heading at 36ch — matches the rest of the theme (intro,
+     featured-collection, event-slider, fullbleed, main-recipes). */
+  .text-image-split-text h3 {
+    max-width: 36ch;
+  }
+
   /* Media side — up to 2 media items side by side, each with caption underneath */
   .text-image-split-media {
     display: flex;

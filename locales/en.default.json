@@ -247,6 +247,7 @@
       "contents_property": "Flavours",
       "decrease": "Remove one {{ name }}",
       "increase": "Add one {{ name }}",
+      "view_product": "View {{ name }} product page",
       "checkout_error": "Sorry, we couldn't add your box to the cart. Please try again."
     }
   },
