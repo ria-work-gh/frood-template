@@ -20,7 +20,7 @@
         "heading": "Real food, made simple.\nMade for modern home cooks.",
         "button_text": "Our range",
         "button_link": "",
-        "collection": "bundles",
+        "collection": "shop",
         "products_to_show": 4,
         "mobile_layout": "carousel",
         "color_scheme": "scheme-1"
@@ -31,7 +31,7 @@
       "settings": {
         "eyebrow": "Our solution",
         "heading": "We built a way to cook that fits your life: real ingredients, real flavour, less effort.",
-        "use_card": true,
+        "use_card": false,
         "color_scheme": "scheme-1"
       }
     },

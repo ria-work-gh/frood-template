@@ -58,67 +58,86 @@
     {%- form 'product', product -%}
       <input type="hidden" name="id" value="{{ product.selected_or_first_available_variant.id }}">
 
-      {%- comment -%} Box 1: title + product render (media[0]) + description + buy controls {%- endcomment -%}
+      {%- comment -%} Box 1: eyebrow + title + product render. The product
+                       description lives in the "Details" accordion below, and
+                       buy controls live in their own Box at the end of the stack. {%- endcomment -%}
       <div class="product-box product-box-main">
-        <h1 class="text-h2 product-box-title">{{ product.title }}</h1>
+        <header class="section-lockup">
+          <p class="text-h1">4 PACK</p>
+          <h1 class="text-h2 product-box-title">{{ product.title }}</h1>
+        </header>
 
+        {%- comment -%}
+          Box render: prefer the product's `custom.product_render_video`
+          metafield (File reference, hand-rendered 3D loop) over product.media[0].
+          Falls back to the primary media if the metafield isn't set so the
+          PDP doesn't break for products that haven't been authored yet.
+        {%- endcomment -%}
+        {%- assign render_video = product.metafields.custom.product_render_video.value -%}
         {%- assign primary_media = product.media[0] -%}
-        {%- if primary_media -%}
+        {%- if render_video != blank or primary_media -%}
           <div class="product-box-render">
-            {%- case primary_media.media_type -%}
-              {%- when 'image' -%}
-                {{ primary_media | image_url: width: 1200 | image_tag:
-                  loading: 'eager',
-                  alt: primary_media.alt | default: product.title,
-                  width: primary_media.width,
-                  height: primary_media.height
-                }}
-              {%- when 'video' -%}
-                {{ primary_media | video_tag: autoplay: true, loop: true, muted: true, controls: false, playsinline: true }}
-              {%- when 'external_video' -%}
-                {%- if primary_media.host == 'youtube' -%}
-                  <iframe
-                    src="https://www.youtube.com/embed/{{ primary_media.external_id }}?autoplay=1&mute=1&loop=1&controls=0&playlist={{ primary_media.external_id }}"
-                    allow="autoplay; encrypted-media"
-                    allowfullscreen
-                    loading="lazy"
-                    title="{{ product.title }}"
-                  ></iframe>
-                {%- elsif primary_media.host == 'vimeo' -%}
-                  <iframe
-                    src="https://player.vimeo.com/video/{{ primary_media.external_id }}?autoplay=1&muted=1&loop=1&controls=0"
-                    allow="autoplay; encrypted-media"
-                    allowfullscreen
-                    loading="lazy"
-                    title="{{ product.title }}"
-                  ></iframe>
-                {%- endif -%}
-              {%- when 'model' -%}
-                {{ primary_media | model_viewer_tag }}
-            {%- endcase -%}
+            {%- if render_video != blank -%}
+              <video
+                autoplay
+                loop
+                muted
+                playsinline
+                preload="metadata"
+                aria-label="{{ product.title }}"
+              >
+                <source src="{{ render_video.url }}">
+              </video>
+            {%- else -%}
+              {%- case primary_media.media_type -%}
+                {%- when 'image' -%}
+                  {{ primary_media | image_url: width: 1200 | image_tag:
+                    loading: 'eager',
+                    alt: primary_media.alt | default: product.title,
+                    width: primary_media.width,
+                    height: primary_media.height
+                  }}
+                {%- when 'video' -%}
+                  {{ primary_media | video_tag: autoplay: true, loop: true, muted: true, controls: false, playsinline: true }}
+                {%- when 'external_video' -%}
+                  {%- if primary_media.host == 'youtube' -%}
+                    <iframe
+                      src="https://www.youtube.com/embed/{{ primary_media.external_id }}?autoplay=1&mute=1&loop=1&controls=0&playlist={{ primary_media.external_id }}"
+                      allow="autoplay; encrypted-media"
+                      allowfullscreen
+                      loading="lazy"
+                      title="{{ product.title }}"
+                    ></iframe>
+                  {%- elsif primary_media.host == 'vimeo' -%}
+                    <iframe
+                      src="https://player.vimeo.com/video/{{ primary_media.external_id }}?autoplay=1&muted=1&loop=1&controls=0"
+                      allow="autoplay; encrypted-media"
+                      allowfullscreen
+                      loading="lazy"
+                      title="{{ product.title }}"
+                    ></iframe>
+                  {%- endif -%}
+                {%- when 'model' -%}
+                  {{ primary_media | model_viewer_tag }}
+              {%- endcase -%}
+            {%- endif -%}
           </div>
         {%- endif -%}
 
-        {%- if product.description != blank -%}
-          <div class="product-box-description typeset">
+      </div>
+
+      {%- comment -%} Details accordion: product description {%- endcomment -%}
+      {%- if product.description != blank -%}
+        <details class="product-box product-accordion">
+          <summary>
+            <span class="text-ui">{{ 'products.product.details' | t }}</span>
+            <span class="product-accordion-icon" aria-hidden="true">+</span>
+          </summary>
+          <div class="product-accordion-content typeset">
             {{ product.description }}
           </div>
-        {%- endif -%}
-
-        <div class="product-box-buy">
-          <div data-variant-render="price">
-            {% render 'product-price', product: product %}
-          </div>
-
-          <div class="product-variants">
-            {% render 'product-variant-selector', product: product %}
-          </div>
-
-          <div data-variant-render="buy-buttons">
-            {% render 'product-buy-buttons', product: product, show_quantity: section.settings.show_quantity %}
-          </div>
-        </div>
-      </div>
+        </details>
+      {%- endif -%}
 
       {%- comment -%} Box 2: Instructions (metafield) {%- endcomment -%}
       {%- if product.metafields.custom.instructions != blank -%}
@@ -158,6 +177,24 @@
           </div>
         </details>
       {%- endif -%}
+
+      {%- comment -%} Buy box (last): variants on top (when applicable), then a
+                       single row of qty stepper + Add to cart + price. {%- endcomment -%}
+      <div class="product-box product-box-buy">
+        <div class="product-variants">
+          {% render 'product-variant-selector', product: product %}
+        </div>
+
+        <div class="product-buy-row">
+          <div class="product-buy-controls" data-variant-render="buy-buttons">
+            {% render 'product-buy-buttons', product: product, show_quantity: section.settings.show_quantity %}
+          </div>
+
+          <div class="product-buy-price" data-variant-render="price">
+            {% render 'product-price', product: product %}
+          </div>
+        </div>
+      </div>
     {%- endform -%}
   </product-form>
 </section>
@@ -199,21 +236,31 @@
     height: 100%;
   }
 
+  /* Each slide shrinks to fit its image so multiple slides can sit side-by-side
+     in the flex row — neighbours peek at the edges of the viewport. */
   .product-bg-slider-slide {
-    flex: 0 0 100%;
+    flex: 0 0 auto;
     min-width: 0;
     height: 100%;
   }
 
+  /* Images / videos: fill container height, width auto so the intrinsic aspect
+     ratio is preserved (object-fit is irrelevant when the box matches the
+     media's natural ratio). */
   .product-bg-slider-slide img,
   .product-bg-slider-slide video,
-  .product-bg-slider-slide iframe,
   .product-bg-slider-slide model-viewer {
-    width: 100%;
+    width: auto;
     height: 100%;
-    object-fit: cover;
     display: block;
+  }
+
+  /* iframes (YouTube/Vimeo) have no intrinsic ratio — give them a 16:9 box. */
+  .product-bg-slider-slide iframe {
+    height: 100%;
+    aspect-ratio: 16 / 9;
     border: 0;
+    display: block;
   }
 
   /* Boxes column — left-aligned, stacked, sits on top of slider */
@@ -235,7 +282,8 @@
     padding: var(--spacing-m);
   }
 
-  /* Box 1: main content stack */
+  /* Box 1: main content stack. The eyebrow + title pair is wrapped in a
+     .section-lockup which bakes in the canonical xxs gap between them. */
   .product-box-main {
     display: flex;
     flex-direction: column;
@@ -265,20 +313,51 @@
     border: 0;
   }
 
-  .product-box-description {
-    margin: 0;
-  }
-
   .product-box-buy {
     display: flex;
     flex-direction: column;
     gap: var(--spacing-s);
   }
 
+  /* Single row: [qty] [Add to cart — fills remaining] [price] */
+  .product-buy-row {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-s);
+  }
+
+  .product-buy-controls {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .product-buy-price {
+    flex: none;
+  }
+
+  /* Dark variant of the primary .button for the PDP Add to cart (matches the
+     bundle builder's add-to-cart treatment). Same shape/type as .button, just
+     swaps the yellow bg for --color-text. Hover inverts to yellow on dark. */
+  .product-buy-controls .button {
+    background-color: var(--color-text);
+    color: var(--color-bg);
+  }
+
+  .product-buy-controls .button:hover {
+    background-color: var(--color-accent);
+    color: var(--color-text);
+  }
+
   .product-variants {
     display: flex;
     flex-direction: column;
     gap: var(--spacing-xs);
+  }
+
+  /* Hide the variants block entirely when it has no options (single-variant
+     products) so the row sits flush with the box's top padding. */
+  .product-variants:empty {
+    display: none;
   }
 
   .variant-options {
